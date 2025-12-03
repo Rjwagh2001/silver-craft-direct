@@ -24,28 +24,28 @@ const collections = [
 
 const FeaturedCollections = () => {
   return (
-    <section className="py-24 bg-background">
-      <div className="container mx-auto px-4 lg:px-8">
+    <section className="py-12 sm:py-16 lg:py-24 bg-background">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
-          <span className="font-sans text-xs uppercase tracking-luxury text-primary mb-4 block">
+        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+          <span className="font-sans text-[10px] sm:text-xs uppercase tracking-luxury text-primary mb-3 sm:mb-4 block">
             Our Collections
           </span>
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl mb-4">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-3 sm:mb-4">
             Featured Collections
           </h2>
-          <div className="section-divider mt-6" />
+          <div className="section-divider mt-4 sm:mt-6" />
         </div>
 
         {/* Collections Grid */}
-        <div className="grid md:grid-cols-3 gap-8 stagger-children">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 stagger-children">
           {collections.map((collection) => (
             <Link
               key={collection.slug}
               to={`/collections/${collection.slug}`}
               className="group block"
             >
-              <div className="relative overflow-hidden rounded-2xl card-luxury">
+              <div className="relative overflow-hidden rounded-xl sm:rounded-2xl card-luxury">
                 {/* Image */}
                 <div className="aspect-[3/4] img-zoom">
                   <img
@@ -59,34 +59,34 @@ const FeaturedCollections = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
 
                 {/* Content */}
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <h3 className="font-serif text-2xl text-background mb-2">
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
+                  <h3 className="font-serif text-xl sm:text-2xl text-background mb-1 sm:mb-2">
                     {collection.name}
                   </h3>
-                  <p className="font-sans text-sm text-background/70 mb-4">
+                  <p className="font-sans text-xs sm:text-sm text-background/70 mb-3 sm:mb-4 line-clamp-2">
                     {collection.description}
                   </p>
-                  <div className="flex items-center gap-2 font-sans text-xs uppercase tracking-luxury text-background group-hover:gap-4 transition-all duration-300">
+                  <div className="flex items-center gap-2 font-sans text-[10px] sm:text-xs uppercase tracking-luxury text-background group-hover:gap-3 sm:group-hover:gap-4 transition-all duration-300">
                     <span>Shop Now</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                   </div>
                 </div>
 
                 {/* Hover Border Effect */}
-                <div className="absolute inset-0 border-2 border-transparent group-hover:border-background/20 rounded-2xl transition-colors duration-500" />
+                <div className="absolute inset-0 border-2 border-transparent group-hover:border-background/20 rounded-xl sm:rounded-2xl transition-colors duration-500" />
               </div>
             </Link>
           ))}
         </div>
 
         {/* View All Link */}
-        <div className="text-center mt-12">
+        <div className="text-center mt-8 sm:mt-10 lg:mt-12">
           <Link
             to="/collections"
-            className="inline-flex items-center gap-2 font-sans text-sm uppercase tracking-luxury text-primary hover:gap-4 transition-all duration-300 elegant-underline pb-1"
+            className="inline-flex items-center gap-2 font-sans text-xs sm:text-sm uppercase tracking-luxury text-primary hover:gap-3 sm:hover:gap-4 transition-all duration-300 elegant-underline pb-1"
           >
             View All Collections
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
           </Link>
         </div>
       </div>

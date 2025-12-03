@@ -23,40 +23,40 @@ const steps = [
 
 const HowItWorks = () => {
   return (
-    <section className="py-24 bg-background">
-      <div className="container mx-auto px-4 lg:px-8">
+    <section className="py-12 sm:py-16 lg:py-24 bg-background">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
-          <span className="font-sans text-xs uppercase tracking-luxury text-primary mb-4 block">
+        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+          <span className="font-sans text-[10px] sm:text-xs uppercase tracking-luxury text-primary mb-3 sm:mb-4 block">
             Simple Process
           </span>
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl mb-4">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-3 sm:mb-4">
             How It Works
           </h2>
-          <div className="section-divider mt-6" />
+          <div className="section-divider mt-4 sm:mt-6" />
         </div>
 
         {/* Steps */}
-        <div className="grid md:grid-cols-3 gap-8 lg:gap-16 stagger-children">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-16 stagger-children">
           {steps.map((step, index) => (
             <div key={index} className="relative text-center group">
-              {/* Connector Line */}
+              {/* Connector Line - Hidden on mobile */}
               {index < steps.length - 1 && (
-                <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-px bg-border" />
+                <div className="hidden md:block absolute top-10 sm:top-12 left-[60%] w-[80%] h-px bg-border" />
               )}
 
               {/* Step Number */}
               <div className="relative z-10">
-                <div className="w-24 h-24 mx-auto mb-6 rounded-full border-2 border-border flex items-center justify-center bg-background group-hover:border-primary transition-colors duration-500">
-                  <step.icon className="h-10 w-10 text-primary" />
+                <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 rounded-full border-2 border-border flex items-center justify-center bg-background group-hover:border-primary transition-colors duration-500">
+                  <step.icon className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
                 </div>
-                <div className="absolute top-0 right-1/2 translate-x-1/2 -translate-y-2 bg-primary text-primary-foreground font-sans text-xs px-3 py-1 rounded-full">
+                <div className="absolute top-0 right-1/2 translate-x-1/2 -translate-y-1 sm:-translate-y-2 bg-primary text-primary-foreground font-sans text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                   {step.step}
                 </div>
               </div>
 
-              <h3 className="font-serif text-2xl mb-3">{step.title}</h3>
-              <p className="font-sans text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
+              <h3 className="font-serif text-xl sm:text-2xl mb-2 sm:mb-3">{step.title}</h3>
+              <p className="font-sans text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto px-2">
                 {step.description}
               </p>
             </div>
