@@ -41,54 +41,54 @@ const Testimonials = () => {
   };
 
   return (
-    <section className="py-24 bg-primary/5">
-      <div className="container mx-auto px-4 lg:px-8">
+    <section className="py-12 sm:py-16 lg:py-24 bg-primary/5">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
-          <span className="font-sans text-xs uppercase tracking-luxury text-primary mb-4 block">
+        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+          <span className="font-sans text-[10px] sm:text-xs uppercase tracking-luxury text-primary mb-3 sm:mb-4 block">
             Testimonials
           </span>
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl mb-4">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-3 sm:mb-4">
             What Our Customers Say
           </h2>
-          <div className="section-divider mt-6" />
+          <div className="section-divider mt-4 sm:mt-6" />
         </div>
 
         {/* Testimonial Carousel */}
         <div className="max-w-4xl mx-auto">
           <div className="relative">
             {/* Main Testimonial */}
-            <div className="bg-background rounded-3xl p-8 md:p-12 shadow-medium relative overflow-hidden">
+            <div className="bg-background rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-12 shadow-medium relative overflow-hidden">
               {/* Quote Icon */}
-              <div className="absolute top-8 right-8 text-primary/10">
-                <Quote className="w-24 h-24" />
+              <div className="absolute top-4 sm:top-8 right-4 sm:right-8 text-primary/10">
+                <Quote className="w-16 h-16 sm:w-24 sm:h-24" />
               </div>
 
               <div className="relative z-10">
                 {/* Stars */}
-                <div className="flex gap-1 mb-6">
+                <div className="flex gap-0.5 sm:gap-1 mb-4 sm:mb-6">
                   {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-accent text-accent" />
+                    <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-accent text-accent" />
                   ))}
                 </div>
 
                 {/* Text */}
-                <blockquote className="font-serif text-xl md:text-2xl text-foreground mb-8 leading-relaxed">
+                <blockquote className="font-serif text-base sm:text-xl md:text-2xl text-foreground mb-6 sm:mb-8 leading-relaxed pr-8 sm:pr-0">
                   "{testimonials[currentIndex].text}"
                 </blockquote>
 
                 {/* Author */}
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="font-serif text-lg text-primary">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="font-serif text-base sm:text-lg text-primary">
                       {testimonials[currentIndex].name[0]}
                     </span>
                   </div>
                   <div>
-                    <p className="font-sans font-medium text-foreground">
+                    <p className="font-sans font-medium text-sm sm:text-base text-foreground">
                       {testimonials[currentIndex].name}
                     </p>
-                    <p className="font-sans text-sm text-muted-foreground">
+                    <p className="font-sans text-xs sm:text-sm text-muted-foreground">
                       {testimonials[currentIndex].location}
                     </p>
                   </div>
@@ -97,26 +97,26 @@ const Testimonials = () => {
             </div>
 
             {/* Navigation */}
-            <div className="flex items-center justify-center gap-4 mt-8">
+            <div className="flex items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8">
               <Button
                 variant="luxury-outline"
                 size="icon"
                 onClick={prev}
-                className="rounded-full"
+                className="rounded-full h-9 w-9 sm:h-10 sm:w-10"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
 
               {/* Dots */}
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 sm:gap-2">
                 {testimonials.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    className={`h-2 rounded-full transition-all duration-300 ${
                       index === currentIndex
-                        ? "w-8 bg-primary"
-                        : "bg-primary/30 hover:bg-primary/50"
+                        ? "w-6 sm:w-8 bg-primary"
+                        : "w-2 bg-primary/30 hover:bg-primary/50"
                     }`}
                   />
                 ))}
@@ -126,9 +126,9 @@ const Testimonials = () => {
                 variant="luxury-outline"
                 size="icon"
                 onClick={next}
-                className="rounded-full"
+                className="rounded-full h-9 w-9 sm:h-10 sm:w-10"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </div>
           </div>
