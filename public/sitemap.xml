@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://laxmisilver.in/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.laxmisilver.in/</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+
+  <!-- Primary pages -->
+  <url><loc>https://laxmisilver.in/about</loc><priority>0.6</priority></url>
+  <url><loc>https://laxmisilver.in/contact</loc><priority>0.6</priority></url>
+  <url><loc>https://laxmisilver.in/collections</loc><priority>0.9</priority></url>
+
+  <!-- Category pages -->
+  <url><loc>https://laxmisilver.in/bangles</loc><priority>0.9</priority></url>
+  <url><loc>https://laxmisilver.in/rings</loc><priority>0.9</priority></url>
+  <url><loc>https://laxmisilver.in/chains</loc><priority>0.9</priority></url>
+  <url><loc>https://laxmisilver.in/bracelets</loc><priority>0.8</priority></url>
+  <url><loc>https://laxmisilver.in/anklets</loc><priority>0.8</priority></url>
+  <url><loc>https://laxmisilver.in/pendants</loc><priority>0.8</priority></url>
+
+  <!-- Intent / synonyms / misspellings pages -->
+  <url><loc>https://laxmisilver.in/jewellery</loc><priority>0.8</priority></url>
+  <url><loc>https://laxmisilver.in/jewelry</loc><priority>0.8</priority></url>
+  <url><loc>https://laxmisilver.in/jwellery</loc><priority>0.7</priority></url>
+  <url><loc>https://laxmisilver.in/92-5-silver</loc><priority>0.8</priority></url>
+
+  <!-- Intent: bridal / wedding -->
+  <url><loc>https://laxmisilver.in/bridal-jewellery</loc><priority>0.8</priority></url>
+  <url><loc>https://laxmisilver.in/wedding-jewellery</loc><priority>0.8</priority></url>
+
+  <!-- Add product pages below as you create them -->
+</urlset>
