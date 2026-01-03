@@ -56,16 +56,25 @@ const ReviewsSection = () => {
   };
 
   return (
-    <section className="py-8 sm:py-12 lg:py-16 bg-cream/30">
+    <section className="py-8 sm:py-12 lg:py-16 bg-secondary/20">
       <div className="container mx-auto px-3 sm:px-4 lg:px-8">
-        {/* Section Header */}
+        {/* Section Header - Centered with Divider */}
         <div className="text-center mb-6 sm:mb-8">
-          <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-semibold text-foreground mb-2">
+          <p className="text-[10px] sm:text-xs uppercase tracking-luxury text-primary mb-2">
+            Customer Love
+          </p>
+          <h2 className="font-serif text-xl sm:text-2xl lg:text-3xl text-foreground">
             Trusted by Silver Lovers Across India
           </h2>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Join thousands of happy customers
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2 italic">
+            "Join thousands of happy customers"
           </p>
+          {/* Decorative Divider */}
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <div className="w-12 h-px bg-gradient-to-r from-transparent to-primary/30" />
+            <div className="w-1.5 h-1.5 rotate-45 border border-primary/40" />
+            <div className="w-12 h-px bg-gradient-to-l from-transparent to-primary/30" />
+          </div>
         </div>
 
         {/* Reviews Slider */}

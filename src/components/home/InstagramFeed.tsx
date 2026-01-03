@@ -37,19 +37,24 @@ const instagramPosts = [
 const InstagramFeed = () => {
   return (
     <section className="py-8 sm:py-12 lg:py-16 bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
-          <span className="font-sans text-[10px] sm:text-xs uppercase tracking-luxury text-primary mb-3 sm:mb-4 block">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-8">
+        {/* Section Header - Centered with Divider */}
+        <div className="text-center mb-6 sm:mb-8">
+          <p className="text-[10px] sm:text-xs uppercase tracking-luxury text-primary mb-2">
             Follow Us
-          </span>
-          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-3 sm:mb-4">
+          </p>
+          <h2 className="font-serif text-xl sm:text-2xl lg:text-3xl text-foreground">
             @laxmisilverofficial
           </h2>
-          <p className="font-sans text-xs sm:text-sm md:text-base text-muted-foreground max-w-2xl mx-auto px-4">
-            Daily reels, exclusive drops, and behind-the-scenes craft. Join 10K+ followers for your daily dose of silver inspiration.
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2 italic">
+            "Daily inspiration, exclusive drops & behind-the-scenes craft"
           </p>
-          <div className="section-divider mt-4 sm:mt-6" />
+          {/* Decorative Divider */}
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <div className="w-12 h-px bg-gradient-to-r from-transparent to-primary/30" />
+            <div className="w-1.5 h-1.5 rotate-45 border border-primary/40" />
+            <div className="w-12 h-px bg-gradient-to-l from-transparent to-primary/30" />
+          </div>
         </div>
 
         {/* Instagram Grid */}
