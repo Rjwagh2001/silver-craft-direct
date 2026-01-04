@@ -24,7 +24,7 @@ const testimonials = [
   {
     name: "Amit Deshmukh",
     location: "Nagpur",
-    text: "As a retailer, I've tried many suppliers. Laxmi Jewellers stands out for consistent quality and honest pricing. Highly recommended!",
+    text: "As a retailer, I've tried many suppliers. Laxmi Silver stands out for consistent quality and honest pricing. Highly recommended!",
     rating: 5,
   },
 ];

@@ -96,10 +96,10 @@ const Reviews = () => {
   return (
     <>
       <Helmet>
-        <title>Customer Reviews | Lakshmi Silver</title>
+        <title>Customer Reviews | Laxmi Silver</title>
         <meta
           name="description"
-          content="Read what our customers say about Lakshmi Silver jewellery. Trusted by thousands across India for quality 92.5 silver pieces."
+          content="Read what our customers say about Laxmi Silver jewellery. Trusted by thousands across India for quality 92.5 silver pieces."
         />
       </Helmet>
 

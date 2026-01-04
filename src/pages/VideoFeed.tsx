@@ -115,7 +115,7 @@ const VideoFeed = () => {
   return (
     <>
       <Helmet>
-        <title>Video Feed — Lakshmi Silver</title>
+        <title>Video Feed — Laxmi Silver</title>
         <meta name="description" content="Watch our latest jewelry videos, behind-the-scenes content, and customer reviews." />
       </Helmet>
 

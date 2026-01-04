@@ -39,7 +39,7 @@ const Footer = () => {
                 <span className="text-foreground font-serif text-lg font-bold">L</span>
               </div>
               <div>
-                <h4 className="font-serif text-lg">Laxmi Jewellers</h4>
+                <h4 className="font-serif text-lg">Laxmi Silver</h4>
                 <p className="text-[10px] font-sans uppercase tracking-luxury text-background/60">
                   Since 1990
                 </p>
@@ -115,6 +115,7 @@ const Footer = () => {
               <li className="flex items-start gap-3 justify-center sm:justify-start">
                 <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-background/50 flex-shrink-0 mt-0.5" />
                 <span className="text-background/70 font-sans text-xs sm:text-sm text-left">
+                  Laxmi Silver,<br />
                   Saraf Bazar Association,<br />
                   Nanded, Maharashtra 431604
                 </span>
@@ -141,7 +142,7 @@ const Footer = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col items-center gap-4 text-center">
             <p className="text-background/50 font-sans text-[10px] sm:text-xs">
-              © 2025 Laxmi Jewellers. All rights reserved.
+              © 2025 Laxmi Silver. All rights reserved.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
               <Link to="/privacy" className="text-background/50 hover:text-background font-sans text-[10px] sm:text-xs transition-colors">

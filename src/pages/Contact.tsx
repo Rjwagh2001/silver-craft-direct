@@ -62,7 +62,7 @@ const Contact = () => {
                     <div>
                       <h3 className="font-sans font-medium text-foreground mb-1">Address</h3>
                       <p className="font-sans text-muted-foreground">
-                        Laxmi Jewellers<br />
+                        Laxmi Silver<br />
                         Saraf Bazar Association,<br />
                         Nanded, Maharashtra — 431604
                       </p>
@@ -127,7 +127,7 @@ const Contact = () => {
                     allowFullScreen
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
-                    title="Laxmi Jewellers Location"
+                    title="Laxmi Silver Location"
                   />
                 </div>
               </div>
