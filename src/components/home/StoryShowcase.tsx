@@ -113,7 +113,7 @@ const StoryShowcase = () => {
             Our Story
           </p>
           <h2 className="font-serif text-xl sm:text-2xl lg:text-3xl text-foreground">
-            The Lakshmi Silver Journey
+            The Laxmi Silver Journey
           </h2>
           <div className="section-divider mt-3" />
         </div>

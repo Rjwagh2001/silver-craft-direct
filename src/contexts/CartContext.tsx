@@ -32,7 +32,7 @@ interface CartContextType extends CartState {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = 'laxmi_jewellers_cart';
+const CART_STORAGE_KEY = 'laxmi_silver_cart';
 const FREE_SHIPPING_THRESHOLD = 2000;
 const SHIPPING_COST = 99;
 

@@ -50,7 +50,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         setImageIndex(0);
       }}
     >
-      {/* Badges */}
+      {/* Badges - Simplified */}
       <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-10 flex flex-col gap-1 sm:gap-2">
         {product.isNew && (
           <span className="bg-primary text-primary-foreground text-[10px] sm:text-xs font-medium px-2 py-0.5 sm:py-1 rounded">
@@ -95,23 +95,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
         />
       </Link>
 
-      {/* Content */}
+      {/* Content - Simplified (removed 925 Silver & Weight) */}
       <div className="p-3 sm:p-4">
-        <div className="flex items-center gap-2 mb-1 sm:mb-2">
-          <span className="text-[10px] sm:text-xs font-medium text-primary uppercase tracking-wider">
-            925 Silver
-          </span>
-          <span className="text-[10px] sm:text-xs text-muted-foreground">•</span>
-          <span className="text-[10px] sm:text-xs text-muted-foreground">{product.weight}</span>
-        </div>
-
         <Link to={`/product/${product.slug}`}>
-          <h3 className="font-medium text-sm sm:text-base line-clamp-2 hover:text-primary transition-colors min-h-[2.5rem] sm:min-h-[3rem]">
+          <h3 className="font-medium text-sm sm:text-base line-clamp-1 hover:text-primary transition-colors">
             {product.name}
           </h3>
         </Link>
 
-        <div className="flex items-center gap-2 mt-2 sm:mt-3">
+        {/* Description */}
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 min-h-[2.5rem]">
+          {product.description}
+        </p>
+
+        {/* Price */}
+        <div className="flex items-center gap-2 mt-3">
           <span className="font-semibold text-base sm:text-lg text-primary">
             {formatPrice(product.price)}
           </span>
@@ -122,27 +120,18 @@ const ProductCard = ({ product }: ProductCardProps) => {
           )}
         </div>
 
-        {/* Add to Cart Button */}
-        <Button
-          variant="luxury-outline"
-          size="sm"
-          className="w-full mt-3 sm:mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs sm:text-sm"
-          onClick={handleAddToCart}
-        >
-          <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-          Add to Bag
-        </Button>
-
-        {/* Mobile Always Visible Button */}
-        <Button
-          variant="luxury-outline"
-          size="sm"
-          className="w-full mt-3 sm:hidden text-xs"
-          onClick={handleAddToCart}
-        >
-          <ShoppingBag className="h-3.5 w-3.5 mr-1.5" />
-          Add to Bag
-        </Button>
+        {/* Add to Cart Button - Improved spacing */}
+        <div className="mt-4 pt-3 border-t border-border/50">
+          <Button
+            variant="luxury-outline"
+            size="sm"
+            className="w-full text-xs sm:text-sm h-10"
+            onClick={handleAddToCart}
+          >
+            <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+            Add to Cart
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -1,22 +1,33 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronRight, Filter, SlidersHorizontal, X, ChevronDown } from 'lucide-react';
+import { ChevronRight, Filter, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { categories, getCategoryBySlug } from '@/data/categories';
 import { products, getProductsByCategory } from '@/data/products';
 import ProductCard from '@/components/product/ProductCard';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Helmet } from 'react-helmet-async';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 
 type SortOption = 'featured' | 'price-low' | 'price-high' | 'newest';
+const PRODUCTS_PER_PAGE = 10;
 
 const CategoryPage = () => {
   const { category } = useParams<{ category: string }>();
   const [sortBy, setSortBy] = useState<SortOption>('featured');
-  const [showFilters, setShowFilters] = useState(false);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const currentCategory = category ? getCategoryBySlug(category) : null;
   const categoryProducts = category ? getProductsByCategory(category) : products;
@@ -45,6 +56,24 @@ const CategoryPage = () => {
     
     return sorted;
   }, [categoryProducts, sortBy, priceRange]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return sortedProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+  }, [sortedProducts, currentPage]);
+
+  // Reset page when filters change
+  const handleFilterChange = (range: [number, number]) => {
+    setPriceRange(range);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (value: SortOption) => {
+    setSortBy(value);
+    setCurrentPage(1);
+  };
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -79,6 +108,7 @@ const CategoryPage = () => {
         <h4 className="font-medium text-sm sm:text-base mb-3 sm:mb-4">Price Range</h4>
         <div className="space-y-2">
           {[
+            { label: 'All Prices', range: [0, 50000] as [number, number] },
             { label: 'Under ₹2,000', range: [0, 2000] as [number, number] },
             { label: '₹2,000 - ₹5,000', range: [2000, 5000] as [number, number] },
             { label: '₹5,000 - ₹10,000', range: [5000, 10000] as [number, number] },
@@ -86,7 +116,7 @@ const CategoryPage = () => {
           ].map(({ label, range }) => (
             <button
               key={label}
-              onClick={() => setPriceRange(range)}
+              onClick={() => handleFilterChange(range)}
               className={`block w-full text-left py-1.5 sm:py-2 text-sm transition-colors ${
                 priceRange[0] === range[0] && priceRange[1] === range[1]
                   ? 'text-primary font-medium'
@@ -104,7 +134,7 @@ const CategoryPage = () => {
         variant="outline"
         className="w-full"
         onClick={() => {
-          setPriceRange([0, 50000]);
+          handleFilterChange([0, 50000]);
         }}
       >
         Clear Filters
@@ -112,17 +142,34 @@ const CategoryPage = () => {
     </div>
   );
 
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, 'ellipsis', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages);
+      }
+    }
+    return pages;
+  };
+
   return (
     <>
       <Helmet>
-        <title>{currentCategory ? `${currentCategory.name} — Laxmi Jewellers` : 'All Collections — Laxmi Jewellers'}</title>
+        <title>{currentCategory ? `${currentCategory.name} — Laxmi Silver` : 'All Collections — Laxmi Silver'}</title>
         <meta 
           name="description" 
           content={currentCategory?.description || 'Explore our complete collection of premium 92.5 sterling silver jewellery.'} 
         />
       </Helmet>
 
-      <div className="min-h-screen flex flex-col overflow-x-hidden">
+      <div className="min-h-screen flex flex-col overflow-x-hidden pb-16 md:pb-0">
         <Navbar />
 
         <main className="flex-1">
@@ -166,7 +213,7 @@ const CategoryPage = () => {
                   {/* Toolbar */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
                     <p className="text-sm text-muted-foreground">
-                      {sortedProducts.length} products
+                      Showing {paginatedProducts.length} of {sortedProducts.length} products
                     </p>
                     
                     <div className="flex items-center gap-2 sm:gap-3">
@@ -192,7 +239,7 @@ const CategoryPage = () => {
                       <div className="relative">
                         <select
                           value={sortBy}
-                          onChange={(e) => setSortBy(e.target.value as SortOption)}
+                          onChange={(e) => handleSortChange(e.target.value as SortOption)}
                           className="appearance-none bg-background border border-input rounded-md px-3 sm:px-4 py-1.5 sm:py-2 pr-8 sm:pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         >
                           <option value="featured">Featured</option>
@@ -206,16 +253,57 @@ const CategoryPage = () => {
                   </div>
 
                   {/* Products Grid */}
-                  {sortedProducts.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                      {sortedProducts.map(product => (
-                        <ProductCard key={product.id} product={product} />
-                      ))}
-                    </div>
+                  {paginatedProducts.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                        {paginatedProducts.map(product => (
+                          <ProductCard key={product.id} product={product} />
+                        ))}
+                      </div>
+
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="mt-8 sm:mt-12">
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious 
+                                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
+                              </PaginationItem>
+                              
+                              {getPageNumbers().map((page, index) => (
+                                <PaginationItem key={index}>
+                                  {page === 'ellipsis' ? (
+                                    <PaginationEllipsis />
+                                  ) : (
+                                    <PaginationLink
+                                      onClick={() => setCurrentPage(page)}
+                                      isActive={currentPage === page}
+                                      className="cursor-pointer"
+                                    >
+                                      {page}
+                                    </PaginationLink>
+                                  )}
+                                </PaginationItem>
+                              ))}
+                              
+                              <PaginationItem>
+                                <PaginationNext 
+                                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="text-center py-12 sm:py-16">
                       <p className="text-muted-foreground mb-4">No products found matching your criteria.</p>
-                      <Button variant="luxury-outline" onClick={() => setPriceRange([0, 50000])}>
+                      <Button variant="luxury-outline" onClick={() => handleFilterChange([0, 50000])}>
                         Clear Filters
                       </Button>
                     </div>
@@ -256,6 +344,7 @@ const CategoryPage = () => {
         </main>
 
         <Footer />
+        <MobileBottomNav />
       </div>
     </>
   );

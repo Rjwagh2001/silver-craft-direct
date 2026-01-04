@@ -1,22 +1,35 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, Truck, Shield, RotateCcw, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, Truck, Shield, MessageCircle, Star, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getProductBySlug, getProductsByCategory } from '@/data/products';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import ProductCard from '@/components/product/ProductCard';
 import { Helmet } from 'react-helmet-async';
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const product = getProductBySlug(slug || '');
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [showStickyBar, setShowStickyBar] = useState(false);
   const { addItem } = useCart();
   const { toast } = useToast();
+
+  // Show sticky bar on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowStickyBar(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (!product) {
     return (
@@ -37,7 +50,7 @@ const ProductDetail = () => {
 
   const relatedProducts = getProductsByCategory(product.category)
     .filter(p => p.id !== product.id)
-    .slice(0, 4);
+    .slice(0, 10);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -61,7 +74,7 @@ const ProductDetail = () => {
     for (let i = 0; i < quantity; i++) {
       addItem(product);
     }
-    window.location.href = '/checkout';
+    navigate('/checkout');
   };
 
   const discount = product.originalPrice 
@@ -75,11 +88,11 @@ const ProductDetail = () => {
   return (
     <>
       <Helmet>
-        <title>{product.name} — Laxmi Jewellers</title>
+        <title>{product.name} — Laxmi Silver</title>
         <meta name="description" content={product.description.slice(0, 160)} />
       </Helmet>
 
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col pb-20 md:pb-0">
         <Navbar />
         
         <main className="flex-1">
@@ -163,16 +176,10 @@ const ProductDetail = () => {
                 {/* Product Info */}
                 <div className="space-y-4 sm:space-y-6">
                   <div>
-                    <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                      <span className="text-xs sm:text-sm font-medium text-primary uppercase tracking-wider">
-                        925 Sterling Silver
-                      </span>
-                      <span className="text-xs sm:text-sm text-muted-foreground">•</span>
-                      <span className="text-xs sm:text-sm text-muted-foreground">SKU: {product.sku}</span>
-                    </div>
                     <h1 className="font-serif text-xl sm:text-2xl lg:text-3xl text-foreground leading-tight">
                       {product.name}
                     </h1>
+                    <p className="text-sm text-muted-foreground mt-2">{product.description}</p>
                   </div>
 
                   {/* Price */}
@@ -190,25 +197,6 @@ const ProductDetail = () => {
                         </span>
                       </>
                     )}
-                  </div>
-
-                  {/* Product Details */}
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 py-4 border-y border-border">
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Purity</p>
-                      <p className="font-medium text-sm sm:text-base">{product.purity}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Weight</p>
-                      <p className="font-medium text-sm sm:text-base">{product.weight}</p>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                      {product.description}
-                    </p>
                   </div>
 
                   {/* Quantity Selector */}
@@ -233,8 +221,8 @@ const ProductDetail = () => {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Action Buttons - Desktop */}
+                  <div className="hidden sm:flex flex-col sm:flex-row gap-3">
                     <Button 
                       variant="luxury" 
                       size="lg" 
@@ -250,6 +238,7 @@ const ProductDetail = () => {
                       className="flex-1"
                       onClick={handleBuyNow}
                     >
+                      <Zap className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                       Buy Now
                     </Button>
                   </div>
@@ -258,7 +247,7 @@ const ProductDetail = () => {
                   <Button 
                     variant="whatsapp" 
                     size="lg" 
-                    className="w-full"
+                    className="w-full hidden sm:flex"
                     asChild
                   >
                     <a 
@@ -283,57 +272,151 @@ const ProductDetail = () => {
                     </button>
                   </div>
 
-                  {/* Trust Badges */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-border">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="p-2 bg-primary/10 rounded-full">
-                        <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  {/* Product Details & Shipping Tabs */}
+                  <Tabs defaultValue="details" className="mt-6">
+                    <TabsList className="w-full grid grid-cols-2 h-12">
+                      <TabsTrigger value="details">Product Details</TabsTrigger>
+                      <TabsTrigger value="shipping">Shipping Details</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="details" className="mt-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Material</p>
+                          <p className="font-medium">{product.purity}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Weight</p>
+                          <p className="font-medium">{product.weight}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Finish</p>
+                          <p className="font-medium">Premium Polished</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Usage</p>
+                          <p className="font-medium">Daily / Occasion</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs sm:text-sm font-medium">Free Shipping</p>
-                        <p className="text-xs text-muted-foreground">Orders ₹2000+</p>
+                      <div className="pt-3 border-t border-border">
+                        <p className="text-sm text-muted-foreground">
+                          <strong>Care Instructions:</strong> Store in a dry place. Clean with soft cloth. Avoid contact with perfumes and chemicals.
+                        </p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="p-2 bg-primary/10 rounded-full">
-                        <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                    </TabsContent>
+                    <TabsContent value="shipping" className="mt-4 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <Truck className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="font-medium">Delivery Timeline</p>
+                          <p className="text-sm text-muted-foreground">5-7 business days across India</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs sm:text-sm font-medium">Hallmarked</p>
-                        <p className="text-xs text-muted-foreground">925 Certified</p>
+                      <div className="flex items-start gap-3">
+                        <Shield className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="font-medium">Secure Packaging</p>
+                          <p className="text-sm text-muted-foreground">Premium gift box with brand certificate</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="p-2 bg-primary/10 rounded-full">
-                        <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                      <div className="pt-3 border-t border-border text-sm text-muted-foreground">
+                        <p>Free shipping on orders above ₹2,000. COD available. Prepaid orders get priority dispatch.</p>
                       </div>
-                      <div>
-                        <p className="text-xs sm:text-sm font-medium">Easy Returns</p>
-                        <p className="text-xs text-muted-foreground">7-day policy</p>
-                      </div>
-                    </div>
-                  </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Related Products */}
+          {/* Similar Products */}
           {relatedProducts.length > 0 && (
             <section className="py-8 sm:py-12 bg-muted/20">
               <div className="container mx-auto px-4">
-                <h2 className="font-serif text-xl sm:text-2xl text-center mb-6 sm:mb-8">You May Also Like</h2>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                <h2 className="font-serif text-xl sm:text-2xl text-center mb-6 sm:mb-8">Similar Products</h2>
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                   {relatedProducts.map(product => (
-                    <ProductCard key={product.id} product={product} />
+                    <div key={product.id} className="w-[200px] sm:w-[240px] shrink-0">
+                      <ProductCard product={product} />
+                    </div>
                   ))}
                 </div>
               </div>
             </section>
           )}
+
+          {/* Reviews Section */}
+          <section className="py-8 sm:py-12">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-serif text-xl sm:text-2xl">Customer Reviews</h2>
+                <Link to="/reviews">
+                  <Button variant="luxury-outline" size="sm">
+                    Add Your Review
+                  </Button>
+                </Link>
+              </div>
+              
+              {/* Sample Reviews */}
+              <div className="space-y-4">
+                <div className="bg-muted/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <span className="text-sm font-medium">Priya Sharma</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Beautiful piece! The quality is amazing and exactly as shown in the pictures.
+                  </p>
+                </div>
+                <div className="bg-muted/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <Star key={i} className={`h-4 w-4 ${i <= 4 ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground'}`} />
+                      ))}
+                    </div>
+                    <span className="text-sm font-medium">Anita Patel</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Excellent craftsmanship. Very happy with my purchase from Laxmi Silver.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
         </main>
 
+        {/* Sticky Action Bar - Mobile */}
+        <div className={`fixed bottom-16 left-0 right-0 z-40 bg-background border-t border-border p-3 sm:hidden transition-transform duration-300 ${
+          showStickyBar ? 'translate-y-0' : 'translate-y-full'
+        }`}>
+          <div className="flex gap-2">
+            <Button 
+              variant="luxury-outline" 
+              size="lg" 
+              className="flex-1"
+              onClick={handleAddToCart}
+            >
+              <ShoppingBag className="h-4 w-4 mr-1.5" />
+              Add
+            </Button>
+            <Button 
+              variant="luxury" 
+              size="lg" 
+              className="flex-1"
+              onClick={handleBuyNow}
+            >
+              <Zap className="h-4 w-4 mr-1.5" />
+              Buy Now
+            </Button>
+          </div>
+        </div>
+
         <Footer />
+        <MobileBottomNav />
       </div>
     </>
   );

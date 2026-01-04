@@ -33,7 +33,7 @@ const TrustSection = () => {
     <section className="py-8 sm:py-10 bg-secondary/30 border-y border-border">
       <div className="container mx-auto px-3 sm:px-4 lg:px-8">
         <h3 className="font-serif text-lg sm:text-xl text-center text-foreground mb-6 sm:mb-8">
-          Why Choose Lakshmi Silver
+          Why Choose Laxmi Silver
         </h3>
         
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">

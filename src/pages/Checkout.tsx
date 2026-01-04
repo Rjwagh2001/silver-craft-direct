@@ -53,7 +53,7 @@ const Checkout = () => {
   }
 
   return (
-    <><Helmet><title>Checkout — Laxmi Jewellers</title></Helmet>
+    <><Helmet><title>Checkout — Laxmi Silver</title></Helmet>
       <div className="min-h-screen flex flex-col overflow-x-hidden"><Navbar />
         <main className="flex-1 py-6 sm:py-8 md:py-12">
           <div className="container mx-auto px-4">

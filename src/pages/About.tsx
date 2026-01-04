@@ -50,7 +50,7 @@ const About = () => {
           <div className="container mx-auto px-4 lg:px-8">
             <div className="max-w-3xl mx-auto">
               <p className="font-serif text-xl md:text-2xl text-foreground leading-relaxed mb-8">
-                Laxmi Jewellers began as a wholesale supplier to retailers across India, known for consistent quality and honest pricing.
+                Laxmi Silver began as a wholesale supplier to retailers across India, known for consistent quality and honest pricing.
               </p>
               <p className="font-sans text-lg text-muted-foreground leading-relaxed mb-8">
                 Over the years, our craftsmanship and customer relationships became the foundation for a new chapter: bringing the same wholesale-grade products directly to our customers.
