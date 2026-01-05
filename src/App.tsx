@@ -17,6 +17,7 @@ import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Reviews from "./pages/Reviews";
 import VideoFeed from "./pages/VideoFeed";
+import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,7 +44,7 @@ const App = () => (
               <Route path="/faq" element={<FAQ />} />
               <Route path="/reviews" element={<Reviews />} />
               <Route path="/videos" element={<VideoFeed />} />
-              <Route path="/account" element={<About />} />
+              <Route path="/account" element={<Account />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

@@ -18,8 +18,9 @@ const MobileBottomNav = () => {
   const location = useLocation();
   
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border md:hidden safe-area-pb">
-      <div className="flex items-end justify-around px-1 pt-1 pb-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      {/* Force single row with flex-nowrap and fixed height */}
+      <div className="flex flex-nowrap items-stretch justify-between h-16 px-2">
         {navItems.map((item) => {
           const isActive = !item.isExternal && location.pathname === item.path;
           const Icon = item.icon;
@@ -30,18 +31,22 @@ const MobileBottomNav = () => {
               <Link
                 key={item.name}
                 to={item.path}
-                className="relative -top-3 flex flex-col items-center"
+                className="flex-1 flex flex-col items-center justify-center relative"
               >
-                <div className={cn(
-                  "w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-200",
-                  isActive 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-foreground text-background"
-                )}>
-                  <Icon className="h-6 w-6" />
+                {/* Elevated circle positioned above */}
+                <div className="absolute -top-5">
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-200",
+                    isActive 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-foreground text-background"
+                  )}>
+                    <Icon className="h-5 w-5" />
+                  </div>
                 </div>
+                {/* Label positioned at bottom */}
                 <span className={cn(
-                  "text-[10px] mt-1 font-medium transition-colors",
+                  "text-[10px] mt-auto mb-1 font-medium transition-colors",
                   isActive ? "text-primary" : "text-foreground"
                 )}>
                   {item.name}
@@ -58,7 +63,7 @@ const MobileBottomNav = () => {
                 href={item.path}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-col items-center py-2 px-3"
+                className="flex-1 flex flex-col items-center justify-center"
               >
                 <div className="relative">
                   <Icon className="h-5 w-5 text-green-600" />
@@ -77,7 +82,7 @@ const MobileBottomNav = () => {
               key={item.name}
               to={item.path}
               className={cn(
-                "flex flex-col items-center py-2 px-3 transition-colors",
+                "flex-1 flex flex-col items-center justify-center transition-colors",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
