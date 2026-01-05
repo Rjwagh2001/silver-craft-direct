@@ -123,7 +123,7 @@ const Navbar = () => {
 
             {/* Center - Brand Name */}
             <Link to="/" className="absolute left-1/2 -translate-x-1/2">
-              <h1 className="font-serif text-base sm:text-xl font-semibold tracking-wide-luxury text-foreground uppercase">
+              <h1 className="font-serif text-base sm:text-xl font-bold tracking-[0.15em] text-foreground uppercase bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text" style={{ letterSpacing: '0.12em' }}>
                 Laxmi Silver
               </h1>
             </Link>
@@ -135,7 +135,8 @@ const Navbar = () => {
                 <span className="sr-only">Search</span>
               </Button>
               
-              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 hidden sm:flex">
+              {/* Wishlist - visible on all screens */}
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10">
                 <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="sr-only">Wishlist</span>
               </Button>
