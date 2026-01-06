@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Product, CartItem } from '@/types/product';
+// Note: Cart syncs with backend when user is authenticated via CartContext
+// For now, localStorage is used for guest users. Backend sync can be added later.
 
 interface CartState {
   items: CartItem[];
