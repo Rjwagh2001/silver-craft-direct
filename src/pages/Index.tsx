@@ -10,11 +10,17 @@ import TrustSection from "@/components/home/TrustSection";
 import ReviewsSection from "@/components/home/ReviewsSection";
 import InstagramFeed from "@/components/home/InstagramFeed";
 import SectionDivider from "@/components/ui/SectionDivider";
+import { useFeaturedProducts, useProducts } from "@/hooks/use-products";
 import { getFeaturedProducts, getNewArrivals } from "@/data/products";
 
 const Index = () => {
-  const trendingProducts = getFeaturedProducts();
-  const newArrivals = getNewArrivals();
+  // Fetch from API with fallback to static data
+  const { data: apiFeaturedProducts } = useFeaturedProducts();
+  const { data: apiNewArrivals } = useProducts({ sort: '-createdAt', limit: 12 });
+
+  // Use API data or fall back to static
+  const trendingProducts = apiFeaturedProducts?.length ? apiFeaturedProducts : getFeaturedProducts();
+  const newArrivals = apiNewArrivals?.products?.length ? apiNewArrivals.products : getNewArrivals();
 
   return (
     <>

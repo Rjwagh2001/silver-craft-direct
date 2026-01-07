@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, Truck, Shield, MessageCircle, Star, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, Truck, Shield, MessageCircle, Star, Zap, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useProduct, useProductsByCategory } from '@/hooks/use-products';
 import { getProductBySlug, getProductsByCategory } from '@/data/products';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
@@ -10,17 +11,29 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import ProductCard from '@/components/product/ProductCard';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Helmet } from 'react-helmet-async';
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const product = getProductBySlug(slug || '');
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const { addItem } = useCart();
   const { toast } = useToast();
+
+  // Fetch from API
+  const { data: apiProduct, isLoading, error } = useProduct(slug || '');
+  
+  // Fallback to static data
+  const staticProduct = getProductBySlug(slug || '');
+  const product = apiProduct || staticProduct;
+
+  // Fetch related products
+  const { data: relatedData } = useProductsByCategory(product?.category || '', { limit: 10 });
+  const staticRelated = product ? getProductsByCategory(product.category).filter(p => p.id !== product.id).slice(0, 10) : [];
+  const relatedProducts = (relatedData?.products || staticRelated).filter(p => p.id !== product?.id).slice(0, 10);
 
   // Show sticky bar on scroll
   useEffect(() => {
@@ -30,6 +43,53 @@ const ProductDetail = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Reset selected image when product changes
+  useEffect(() => {
+    setSelectedImage(0);
+    setQuantity(1);
+  }, [slug]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1">
+          <div className="bg-muted/30 py-2 sm:py-3">
+            <div className="container mx-auto px-4">
+              <Skeleton className="h-4 w-64" />
+            </div>
+          </div>
+          <section className="py-6 sm:py-8 md:py-12">
+            <div className="container mx-auto px-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
+                <div className="space-y-4">
+                  <Skeleton className="aspect-square rounded-lg" />
+                  <div className="flex gap-3">
+                    {[1, 2, 3].map(i => (
+                      <Skeleton key={i} className="w-20 h-20 rounded-lg" />
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-6">
+                  <Skeleton className="h-8 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-10 w-32" />
+                  <div className="flex gap-3">
+                    <Skeleton className="h-12 flex-1" />
+                    <Skeleton className="h-12 flex-1" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -47,10 +107,6 @@ const ProductDetail = () => {
       </div>
     );
   }
-
-  const relatedProducts = getProductsByCategory(product.category)
-    .filter(p => p.id !== product.id)
-    .slice(0, 10);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -334,9 +390,9 @@ const ProductDetail = () => {
               <div className="container mx-auto px-4">
                 <h2 className="font-serif text-xl sm:text-2xl text-center mb-6 sm:mb-8">Similar Products</h2>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                  {relatedProducts.map(product => (
-                    <div key={product.id} className="w-[200px] sm:w-[240px] shrink-0">
-                      <ProductCard product={product} />
+                  {relatedProducts.map(relatedProduct => (
+                    <div key={relatedProduct.id} className="w-[200px] sm:w-[240px] shrink-0">
+                      <ProductCard product={relatedProduct} />
                     </div>
                   ))}
                 </div>
@@ -350,7 +406,7 @@ const ProductDetail = () => {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-serif text-xl sm:text-2xl">Customer Reviews</h2>
                 <Link to="/reviews">
-                  <Button variant="luxury-outline" size="sm">
+                  <Button variant="outline" size="sm">
                     Add Your Review
                   </Button>
                 </Link>
@@ -390,29 +446,25 @@ const ProductDetail = () => {
         </main>
 
         {/* Sticky Action Bar - Mobile */}
-        <div className={`fixed bottom-16 left-0 right-0 z-40 bg-background border-t border-border p-3 sm:hidden transition-transform duration-300 ${
-          showStickyBar ? 'translate-y-0' : 'translate-y-full'
-        }`}>
-          <div className="flex gap-2">
-            <Button 
-              variant="luxury-outline" 
-              size="lg" 
-              className="flex-1"
-              onClick={handleAddToCart}
-            >
-              <ShoppingBag className="h-4 w-4 mr-1.5" />
-              Add
-            </Button>
-            <Button 
-              variant="luxury" 
-              size="lg" 
-              className="flex-1"
-              onClick={handleBuyNow}
-            >
-              <Zap className="h-4 w-4 mr-1.5" />
-              Buy Now
-            </Button>
-          </div>
+        <div className={`fixed bottom-16 left-0 right-0 bg-background border-t border-border p-3 flex gap-3 transition-transform duration-300 md:hidden z-40 ${showStickyBar ? 'translate-y-0' : 'translate-y-full'}`}>
+          <Button 
+            variant="luxury" 
+            size="lg" 
+            className="flex-1"
+            onClick={handleAddToCart}
+          >
+            <ShoppingBag className="h-4 w-4 mr-2" />
+            Add to Bag
+          </Button>
+          <Button 
+            variant="luxury-dark" 
+            size="lg" 
+            className="flex-1"
+            onClick={handleBuyNow}
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            Buy Now
+          </Button>
         </div>
 
         <Footer />

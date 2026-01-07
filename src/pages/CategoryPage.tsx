@@ -1,15 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronRight, Filter, ChevronDown } from 'lucide-react';
+import { ChevronRight, Filter, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { categories, getCategoryBySlug } from '@/data/categories';
-import { products, getProductsByCategory } from '@/data/products';
+import { useProducts, useCategories } from '@/hooks/use-products';
+import { categories as staticCategories, getCategoryBySlug } from '@/data/categories';
+import { products as staticProducts, getProductsByCategory } from '@/data/products';
 import ProductCard from '@/components/product/ProductCard';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Helmet } from 'react-helmet-async';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Pagination,
   PaginationContent,
@@ -21,7 +23,7 @@ import {
 } from "@/components/ui/pagination";
 
 type SortOption = 'featured' | 'price-low' | 'price-high' | 'newest';
-const PRODUCTS_PER_PAGE = 10;
+const PRODUCTS_PER_PAGE = 12;
 
 const CategoryPage = () => {
   const { category } = useParams<{ category: string }>();
@@ -29,16 +31,45 @@ const CategoryPage = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const currentCategory = category ? getCategoryBySlug(category) : null;
-  const categoryProducts = category ? getProductsByCategory(category) : products;
+  // Fetch from API
+  const { data: apiCategories, isLoading: categoriesLoading } = useCategories();
+  const { data: apiProductsData, isLoading: productsLoading, error: productsError } = useProducts({
+    page: currentPage,
+    limit: PRODUCTS_PER_PAGE,
+    category: category || undefined,
+    minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
+    maxPrice: priceRange[1] < 50000 ? priceRange[1] : undefined,
+    sort: sortBy === 'price-low' ? 'price' : sortBy === 'price-high' ? '-price' : sortBy === 'newest' ? '-createdAt' : '-isFeatured',
+  });
+
+  // Use API data or fall back to static data
+  const categories = apiCategories || staticCategories;
+  const currentCategory = category 
+    ? categories.find(c => c.slug === category) || getCategoryBySlug(category)
+    : null;
+
+  // Handle products - use API or fallback to static
+  const hasApiProducts = apiProductsData && apiProductsData.products && apiProductsData.products.length > 0;
+  
+  const categoryProducts = useMemo(() => {
+    if (hasApiProducts) {
+      return apiProductsData.products;
+    }
+    // Fallback to static data
+    return category ? getProductsByCategory(category) : staticProducts;
+  }, [hasApiProducts, apiProductsData, category]);
 
   const sortedProducts = useMemo(() => {
+    // If using API data, it's already sorted/filtered
+    if (hasApiProducts) {
+      return categoryProducts;
+    }
+    
+    // Manual sort/filter for static data
     let sorted = [...categoryProducts];
     
-    // Filter by price
     sorted = sorted.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
-    // Sort
     switch (sortBy) {
       case 'price-low':
         sorted.sort((a, b) => a.price - b.price);
@@ -55,24 +86,33 @@ const CategoryPage = () => {
     }
     
     return sorted;
-  }, [categoryProducts, sortBy, priceRange]);
+  }, [categoryProducts, sortBy, priceRange, hasApiProducts]);
 
   // Pagination logic
-  const totalPages = Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE);
+  const pagination = apiProductsData?.pagination as { total: number; pages: number; page: number } | undefined;
+  const totalPages = hasApiProducts && pagination
+    ? pagination.pages
+    : Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE);
+  
   const paginatedProducts = useMemo(() => {
+    if (hasApiProducts) {
+      return sortedProducts; // API handles pagination
+    }
     const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
     return sortedProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
-  }, [sortedProducts, currentPage]);
+  }, [sortedProducts, currentPage, hasApiProducts]);
 
   // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [category, priceRange, sortBy]);
+
   const handleFilterChange = (range: [number, number]) => {
     setPriceRange(range);
-    setCurrentPage(1);
   };
 
   const handleSortChange = (value: SortOption) => {
     setSortBy(value);
-    setCurrentPage(1);
   };
 
   const FilterContent = () => (
@@ -133,9 +173,7 @@ const CategoryPage = () => {
       <Button
         variant="outline"
         className="w-full"
-        onClick={() => {
-          handleFilterChange([0, 50000]);
-        }}
+        onClick={() => handleFilterChange([0, 50000])}
       >
         Clear Filters
       </Button>
@@ -158,6 +196,8 @@ const CategoryPage = () => {
     }
     return pages;
   };
+
+  const isLoading = productsLoading || categoriesLoading;
 
   return (
     <>
@@ -213,7 +253,11 @@ const CategoryPage = () => {
                   {/* Toolbar */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
                     <p className="text-sm text-muted-foreground">
-                      Showing {paginatedProducts.length} of {sortedProducts.length} products
+                      {isLoading ? (
+                        'Loading products...'
+                      ) : (
+                        `Showing ${paginatedProducts.length} of ${hasApiProducts && pagination ? pagination.total : sortedProducts.length} products`
+                      )}
                     </p>
                     
                     <div className="flex items-center gap-2 sm:gap-3">
@@ -252,8 +296,21 @@ const CategoryPage = () => {
                     </div>
                   </div>
 
+                  {/* Loading State */}
+                  {isLoading && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="space-y-3">
+                          <Skeleton className="aspect-square rounded-lg" />
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-4 w-1/2" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Products Grid */}
-                  {paginatedProducts.length > 0 ? (
+                  {!isLoading && paginatedProducts.length > 0 && (
                     <>
                       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                         {paginatedProducts.map(product => (
@@ -300,12 +357,22 @@ const CategoryPage = () => {
                         </div>
                       )}
                     </>
-                  ) : (
+                  )}
+
+                  {/* No Products */}
+                  {!isLoading && paginatedProducts.length === 0 && (
                     <div className="text-center py-12 sm:py-16">
                       <p className="text-muted-foreground mb-4">No products found matching your criteria.</p>
-                      <Button variant="luxury-outline" onClick={() => handleFilterChange([0, 50000])}>
+                      <Button variant="outline" onClick={() => handleFilterChange([0, 50000])}>
                         Clear Filters
                       </Button>
+                    </div>
+                  )}
+
+                  {/* Error State */}
+                  {productsError && !hasApiProducts && paginatedProducts.length === 0 && (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground mb-4">Unable to load products. Using cached data.</p>
                     </div>
                   )}
                 </div>
