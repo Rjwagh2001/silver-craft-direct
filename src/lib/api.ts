@@ -25,13 +25,13 @@ class ApiClient {
     timeout: number = 60000 // 60 second timeout for cold starts
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
-    const token = this.getAuthToken();
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
+    const token = this.getAuthToken();
     if (token) {
       (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
     }
