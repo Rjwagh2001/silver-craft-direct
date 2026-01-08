@@ -268,6 +268,12 @@ const Auth = () => {
                   ? (isLogin ? 'Signing in...' : 'Creating account...') 
                   : (isLogin ? 'Sign In' : 'Create Account')}
               </Button>
+              
+              {isLoading && (
+                <p className="text-xs text-muted-foreground text-center animate-pulse">
+                  Please wait, server may take up to 30 seconds to respond...
+                </p>
+              )}
             </form>
 
             {/* Toggle */}
