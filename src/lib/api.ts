@@ -21,7 +21,8 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    timeout: number = 60000 // 60 second timeout for cold starts
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
     const token = this.getAuthToken();
@@ -36,11 +37,17 @@ class ApiClient {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
       const response = await fetch(url, {
         ...options,
         headers,
         credentials: 'include',
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -50,6 +57,9 @@ class ApiClient {
 
       return { success: true, data };
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return { success: false, error: 'Request timed out. Server may be starting up, please try again.' };
+      }
       const message = error instanceof Error ? error.message : 'An error occurred';
       return { success: false, error: message };
     }
