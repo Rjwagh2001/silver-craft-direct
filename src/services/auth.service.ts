@@ -54,7 +54,12 @@ export const authService = {
   },
 
   async register(data: RegisterData) {
-    const response = await api.post<AuthResponse>('/auth/register', data);
+    const response = await api.post<AuthResponse>('/auth/signup', {
+      name: `${data.firstName} ${data.lastName}`.trim(),
+      email: data.email,
+      password: data.password,
+      phone: data.phone || ''
+    });
     if (response.success && response.data) {
       const { accessToken, refreshToken } = response.data as unknown as AuthResponse;
       localStorage.setItem('accessToken', accessToken);

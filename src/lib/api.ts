@@ -1,5 +1,5 @@
 // API Configuration for Laxmi Silver Backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://laxmi-silver-backend.onrender.com/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://laxmi-silver-backend.onrender.com/api';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
