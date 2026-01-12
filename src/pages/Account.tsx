@@ -52,8 +52,30 @@ const Account = () => {
     navigate('/');
   };
 
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <>
+        <Helmet>
+          <title>My Account — Laxmi Silver</title>
+        </Helmet>
+        <div className="min-h-screen flex flex-col pb-16 md:pb-0">
+          <Navbar />
+          <main className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-4 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-muted-foreground">Loading your account...</p>
+            </div>
+          </main>
+          <Footer />
+          <MobileBottomNav />
+        </div>
+      </>
+    );
+  }
+
   // Show login prompt if not authenticated
-  if (!isLoading && !isAuthenticated) {
+  if (!isAuthenticated) {
     return (
       <>
         <Helmet>

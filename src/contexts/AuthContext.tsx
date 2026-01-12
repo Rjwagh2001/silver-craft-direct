@@ -70,14 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // ===============================
   // Fetch Logged-in User
   // ===============================
-  const fetchUser = async () => {
-
-    // If user is not authenticated (no token), stop loading
-    if (!authService.isAuthenticated()) {
-      setIsLoading(false);
-      return;
-    }
-
+  const fetchUser = async (): Promise<boolean> => {
     try {
       // Try fetching user profile using access token
       const response = await authService.getProfile();
@@ -85,7 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (response.success && response.data) {
         // Successfully fetched user
         setUser((response.data as { user: User }).user);
-
+        return true;
       } else {
         // Access token might be expired, try refreshing token
         const refreshResponse = await authService.refreshToken();
@@ -96,21 +89,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
           if (profileResponse.success && profileResponse.data) {
             setUser((profileResponse.data as { user: User }).user);
+            return true;
           }
-        } else {
-          // Refresh token failed, clear stored tokens
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
         }
+        // Refresh failed - clear invalid tokens
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        setUser(null);
+        return false;
       }
-
     } catch (error) {
-      // Log error if fetching user fails
       console.error('Failed to fetch user:', error);
-
-    } finally {
-      // Stop loading regardless of outcome
-      setIsLoading(false);
+      setUser(null);
+      return false;
     }
   };
 
@@ -119,7 +110,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Run fetchUser on App Load
   // ===============================
   useEffect(() => {
-    fetchUser();
+    const initAuth = async () => {
+      // If no token exists, skip fetch and stop loading immediately
+      if (!authService.isAuthenticated()) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Token exists - try to fetch user
+      await fetchUser();
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
 
@@ -127,18 +130,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Login Function
   // ===============================
   const login = async (credentials: LoginCredentials) => {
+    try {
+      // Call login API
+      const response = await authService.login(credentials);
 
-    // Call login API
-    const response = await authService.login(credentials);
+      if (response.success && response.data) {
+        // Set logged-in user IMMEDIATELY from login response
+        const userData = (response.data as { user: User }).user;
+        setUser(userData);
+        return { success: true };
+      }
 
-    if (response.success && response.data) {
-      // Set logged-in user
-      setUser((response.data as { user: User }).user);
-      return { success: true };
+      // Login failed
+      return { success: false, error: response.error };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Login failed. Please try again.' };
     }
-
-    // Login failed
-    return { success: false, error: response.error };
   };
 
 
