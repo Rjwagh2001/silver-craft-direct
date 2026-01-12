@@ -1,5 +1,6 @@
 import { Category } from '@/types/product';
 
+/* All category images and all get from here */
 export const categories: Category[] = [
   {
     id: '1',

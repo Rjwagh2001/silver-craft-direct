@@ -1,74 +1,150 @@
-// API Configuration for Laxmi Silver Backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://laxmi-silver-backend.onrender.com/api';
+// ===============================
+// API Configuration
+// ===============================
 
+// Base URL for Laxmi Silver Backend
+// Priority:
+// 1. Environment variable (VITE_API_URL)
+// 2. Fallback production URL
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  'https://laxmi-silver-backend.onrender.com/api';
+
+
+// ===============================
+// Standard API Response Interface
+// ===============================
+
+// Generic API response format used across the app
+// T represents the expected data type
 interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
+  success: boolean;     // Indicates request success or failure
+  data?: T;             // Response payload (if successful)
+  message?: string;     // Optional success message
+  error?: string;       // Error message (if failed)
 }
 
+
+// ===============================
+// API Client Class
+// ===============================
+
+// ApiClient wraps fetch() and provides:
+// - Base URL handling
+// - Authorization headers
+// - Timeout handling
+// - Error normalization
 class ApiClient {
   private baseUrl: string;
 
+  // Initialize API client with base URL
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
   }
 
+
+  // ===============================
+  // Get Access Token
+  // ===============================
+
+  // Retrieves JWT access token from localStorage
+  // Used for Authorization header
   private getAuthToken(): string | null {
     return localStorage.getItem('accessToken');
   }
 
+
+  // ===============================
+  // Core Request Handler
+  // ===============================
+
+  // Generic request method used by all HTTP verbs
+  // Handles:
+  // - Authorization
+  // - JSON parsing
+  // - Timeout (for cold starts)
+  // - Error handling
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    timeout: number = 60000 // 60 second timeout for cold starts
+    timeout: number = 60000 // 60 seconds to handle Render cold start
   ): Promise<ApiResponse<T>> {
+
+    // Build full request URL
     const url = `${this.baseUrl}${endpoint}`;
 
+    // Default headers
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
+    // Attach Authorization header if token exists
     const token = this.getAuthToken();
     if (token) {
       (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
     }
 
     try {
+      // Create abort controller for request timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+      // Execute HTTP request
       const response = await fetch(url, {
         ...options,
         headers,
-        credentials: 'include',
+        credentials: 'include',   // Allows cookies if backend uses them
         signal: controller.signal,
       });
 
+      // Clear timeout on success
       clearTimeout(timeoutId);
 
+      // Parse JSON response
       const data = await response.json();
 
+      // Handle HTTP errors
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'Request failed');
+        throw new Error(
+          data.message || data.error || 'Request failed'
+        );
       }
 
+      // Return standardized success response
       return { success: true, data };
+
     } catch (error) {
+
+      // Handle timeout error (common on cold start)
       if (error instanceof Error && error.name === 'AbortError') {
-        return { success: false, error: 'Request timed out. Server may be starting up, please try again.' };
+        return {
+          success: false,
+          error:
+            'Request timed out. Server may be starting up, please try again.',
+        };
       }
-      const message = error instanceof Error ? error.message : 'An error occurred';
+
+      // Handle generic error
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+
       return { success: false, error: message };
     }
   }
 
+
+  // ===============================
+  // HTTP GET
+  // ===============================
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'GET' });
   }
 
+
+  // ===============================
+  // HTTP POST
+  // ===============================
   async post<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'POST',
@@ -76,6 +152,10 @@ class ApiClient {
     });
   }
 
+
+  // ===============================
+  // HTTP PUT
+  // ===============================
   async put<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PUT',
@@ -83,38 +163,75 @@ class ApiClient {
     });
   }
 
+
+  // ===============================
+  // HTTP DELETE
+  // ===============================
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
-  async uploadImages(endpoint: string, files: File[]): Promise<ApiResponse<unknown>> {
+
+  // ===============================
+  // Image Upload (Multipart)
+  // ===============================
+
+  // Upload multiple images using FormData
+  async uploadImages(
+    endpoint: string,
+    files: File[]
+  ): Promise<ApiResponse<unknown>> {
+
+    // Build full upload URL
     const url = `${this.baseUrl}${endpoint}`;
+
+    // Get auth token if available
     const token = this.getAuthToken();
 
+    // Prepare multipart form data
     const formData = new FormData();
     files.forEach(file => formData.append('images', file));
 
     try {
+      // Send multipart request
       const response = await fetch(url, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: token
+          ? { Authorization: `Bearer ${token}` }
+          : {},
         body: formData,
         credentials: 'include',
       });
 
+      // Parse response
       const data = await response.json();
 
+      // Handle upload error
       if (!response.ok) {
         throw new Error(data.message || 'Upload failed');
       }
 
+      // Upload success
       return { success: true, data };
+
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Upload failed';
+
+      // Handle upload failure
+      const message =
+        error instanceof Error ? error.message : 'Upload failed';
+
       return { success: false, error: message };
     }
   }
 }
 
+
+// ===============================
+// Export API Client Instance
+// ===============================
+
+// Singleton API client used across the app
 export const api = new ApiClient(API_BASE_URL);
+
+// Export base URL for debugging / logging
 export { API_BASE_URL };
