@@ -75,6 +75,9 @@ const Auth = () => {
   // Loading state for API calls
   const [isLoading, setIsLoading] = useState(false);
 
+  // Loading message for slow server
+  const [loadingMessage, setLoadingMessage] = useState('');
+
   // Store validation errors per field
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -100,6 +103,15 @@ const Auth = () => {
   // Redirect user back to the page they came from after login/register
   const from =
     (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+
+  // ===============================
+  // Wake up backend on page load (Render cold start fix)
+  // ===============================
+  useState(() => {
+    // Ping backend to wake it up when user visits auth page
+    fetch('https://laxmi-silver-backend.onrender.com/api/health')
+      .catch(() => {}); // Ignore errors, just wake it up
+  });
 
 
   // ===============================
@@ -165,6 +177,17 @@ const Auth = () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setLoadingMessage('');
+
+    // Show helpful message after 3 seconds (Render cold start)
+    const slowTimer = setTimeout(() => {
+      setLoadingMessage('Server is waking up, please wait...');
+    }, 3000);
+
+    // Show extended message after 15 seconds
+    const extendedTimer = setTimeout(() => {
+      setLoadingMessage('Almost there! Free server takes up to 30s to start...');
+    }, 15000);
 
     try {
       if (isLogin) {
@@ -221,7 +244,10 @@ const Auth = () => {
         variant: 'destructive',
       });
     } finally {
+      clearTimeout(slowTimer);
+      clearTimeout(extendedTimer);
       setIsLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -419,9 +445,9 @@ const Auth = () => {
               </Button>
 
               {/* Loading Message */}
-              {isLoading && (
+              {isLoading && loadingMessage && (
                 <p className="text-xs text-muted-foreground text-center animate-pulse">
-                  Please wait, server may take up to 30 seconds to respond...
+                  {loadingMessage}
                 </p>
               )}
             </form>
