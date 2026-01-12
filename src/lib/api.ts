@@ -67,7 +67,8 @@ class ApiClient {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    timeout: number = 60000 // 60 seconds to handle Render cold start
+    timeout: number = 300000 // 5 minutes seconds to handle Render cold start
+
   ): Promise<ApiResponse<T>> {
 
     // Build full request URL
