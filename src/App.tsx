@@ -21,6 +21,7 @@ import VideoFeed from "./pages/VideoFeed";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
+import ResendVerification from "./pages/ResendVerification";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="/account" element={<Account />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/resend-verification" element={<ResendVerification />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

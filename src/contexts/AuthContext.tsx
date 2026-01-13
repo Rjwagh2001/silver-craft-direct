@@ -30,6 +30,7 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  setAuthFromVerification: (user: User) => void;
 }
 
 
@@ -213,6 +214,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
   // ===============================
+  // Set Auth from Email Verification
+  // ===============================
+  const setAuthFromVerification = (userData: User) => {
+    setUser(userData);
+  };
+
+
+  // ===============================
   // Context Provider
   // ===============================
   return (
@@ -225,6 +234,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         register,
         logout,
         refreshUser,
+        setAuthFromVerification,
       }}
     >
       {children}
