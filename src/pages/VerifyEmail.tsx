@@ -7,8 +7,6 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { api } from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
 import { Helmet } from 'react-helmet-async';
 
 
@@ -24,7 +22,6 @@ type VerifyState = 'verifying' | 'success' | 'error' | 'no-token';
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setAuthFromVerification } = useAuth();
   const [state, setState] = useState<VerifyState>('verifying');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -36,76 +33,21 @@ const VerifyEmail = () => {
   // Verify Email on Mount
   // ===============================
   useEffect(() => {
-    const verifyEmail = async () => {
-      // No token in URL
-      if (!token) {
-        setState('no-token');
-        return;
-      }
+    if (!token) {
+      setState('no-token');
+      return;
+    }
 
-      try {
-        // Call backend verification endpoint
-        const response = await api.post<{
-          accessToken: string;
-          refreshToken: string;
-          user: {
-            _id: string;
-            name: string;
-            email: string;
-            role: 'customer' | 'admin';
-          };
-        }>('/auth/verify-email', { token });
-
-        console.log('Verify email response:', response);
-
-        if (response.success && response.data) {
-          // Extract tokens and user from response
-          const data = response.data as Record<string, unknown>;
-          
-          // Handle nested response structure
-          const accessToken = data.accessToken as string;
-          const refreshToken = data.refreshToken as string;
-          const user = data.user as Record<string, unknown>;
-
-          if (accessToken && user) {
-            // Save tokens to localStorage
-            localStorage.setItem('accessToken', accessToken);
-            if (refreshToken) {
-              localStorage.setItem('refreshToken', refreshToken);
-            }
-
-            // Update auth context
-            setAuthFromVerification({
-              _id: user._id as string,
-              name: user.name as string,
-              email: user.email as string,
-              role: (user.role as 'customer' | 'admin') || 'customer',
-              createdAt: user.createdAt as string || new Date().toISOString(),
-            });
-
-            setState('success');
-            
-            // Redirect to account after 2 seconds
-            setTimeout(() => {
-              navigate('/account', { replace: true });
-            }, 2000);
-          } else {
-            setState('error');
-            setErrorMessage('Invalid response from server');
-          }
-        } else {
-          setState('error');
-          setErrorMessage(response.error || 'Verification failed');
-        }
-      } catch (error) {
-        console.error('Verification error:', error);
-        setState('error');
-        setErrorMessage('Verification link expired or invalid');
-      }
-    };
-
-    verifyEmail();
-  }, [token, navigate, setAuthFromVerification]);
+    try {
+      // 🔐 Let backend handle verification (GET request)
+      window.location.href =
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/auth/verify-email?token=${token}`;
+    } catch (error) {
+      console.error('Verification redirect error:', error);
+      setState('error');
+      setErrorMessage('Verification link expired or invalid');
+    }
+  }, [token]);
 
 
   // ===============================
@@ -134,7 +76,7 @@ const VerifyEmail = () => {
               </div>
             )}
 
-            {/* Success State */}
+            {/* Success State (fallback – backend usually redirects) */}
             {state === 'success' && (
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
@@ -144,7 +86,7 @@ const VerifyEmail = () => {
                   Email Verified Successfully!
                 </h1>
                 <p className="text-muted-foreground">
-                  Your email has been verified. Redirecting to your account...
+                  Redirecting to your account...
                 </p>
                 <div className="pt-2">
                   <Link to="/account">

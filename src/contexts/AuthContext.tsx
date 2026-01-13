@@ -30,7 +30,6 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  setAuthFromVerification: (user: User) => void;
 }
 
 
@@ -47,9 +46,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const extractUserFromResponse = (data: unknown): User | null => {
   if (!data) return null;
-  
+
   const responseData = data as Record<string, unknown>;
-  
+
   // Handle nested response: { success: true, data: { user: {...} } }
   if (responseData.data && typeof responseData.data === 'object') {
     const innerData = responseData.data as Record<string, unknown>;
@@ -57,12 +56,12 @@ const extractUserFromResponse = (data: unknown): User | null => {
       return innerData.user as User;
     }
   }
-  
+
   // Handle direct user object: { user: {...} }
   if (responseData.user) {
     return responseData.user as User;
   }
-  
+
   return null;
 };
 
@@ -84,23 +83,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await authService.getProfile();
 
-      console.log('getProfile response:', response);
-
       if (response.success && response.data) {
         const userData = extractUserFromResponse(response.data);
-        
         if (userData) {
           setUser(userData);
           return true;
         }
       }
-      
-      // Access token might be expired, try refreshing token
+
+      // Access token might be expired → try refresh
       const refreshResponse = await authService.refreshToken();
 
       if (refreshResponse.success) {
         const profileResponse = await authService.getProfile();
-
         if (profileResponse.success && profileResponse.data) {
           const userData = extractUserFromResponse(profileResponse.data);
           if (userData) {
@@ -109,13 +104,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
       }
-      
-      // Refresh failed - clear invalid tokens
+
+      // ❌ Do NOT touch refresh token (httpOnly cookie)
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       setUser(null);
       return false;
-      
+
     } catch (error) {
       console.error('Failed to fetch user:', error);
       setUser(null);
@@ -129,14 +123,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // ===============================
   useEffect(() => {
     const initAuth = async () => {
-      // Always attempt to fetch user from /auth/me
-      // This is the single source of truth for auth state
-      const hasToken = authService.isAuthenticated();
-      
-      if (hasToken) {
+      const hasAccessToken = authService.isAuthenticated();
+
+      if (hasAccessToken) {
         await fetchUser();
       }
-      
+
       setIsLoading(false);
     };
 
@@ -151,14 +143,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await authService.login(credentials);
 
-      console.log('login response:', response);
-
       if (response.success && response.data) {
         const userData = extractUserFromResponse(response.data);
-        
         if (userData) {
           setUser(userData);
-          console.log('User set after login:', userData);
           return { success: true };
         }
       }
@@ -178,13 +166,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await authService.register(data);
 
-      // Registration successful - but DO NOT set user state
-      // User must verify email before they can login
       if (response.success) {
-        // Return success with message to check email
-        return { 
-          success: true, 
-          message: 'Please check your email to verify your account.' 
+        return {
+          success: true,
+          message: 'Please check your email to verify your account.',
         };
       }
 
@@ -201,6 +186,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // ===============================
   const logout = async () => {
     await authService.logout();
+    localStorage.removeItem('accessToken');
     setUser(null);
   };
 
@@ -210,14 +196,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // ===============================
   const refreshUser = async () => {
     await fetchUser();
-  };
-
-
-  // ===============================
-  // Set Auth from Email Verification
-  // ===============================
-  const setAuthFromVerification = (userData: User) => {
-    setUser(userData);
   };
 
 
@@ -234,7 +212,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         register,
         logout,
         refreshUser,
-        setAuthFromVerification,
       }}
     >
       {children}

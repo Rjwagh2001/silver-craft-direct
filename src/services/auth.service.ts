@@ -2,10 +2,6 @@
 // Axios API Instance
 // ===============================
 
-// Import configured Axios instance
-// This already has:
-// - baseURL (VITE_API_URL)
-// - interceptors (auth headers, error handling)
 import { api } from '@/lib/api';
 
 
@@ -13,30 +9,27 @@ import { api } from '@/lib/api';
 // User & Related Types
 // ===============================
 
-// User interface representing backend user document
 export interface User {
-  _id: string;                      // MongoDB user ID
-  name: string;                     // Full name (first + last)
-  email: string;                    // User email
-  phone?: string;                   // Optional phone number
-  role: 'customer' | 'admin';       // User role for authorization
-  avatar?: string;                  // Optional profile image
-  addresses?: Address[];            // User addresses
-  createdAt: string;                // Account creation timestamp
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: 'customer' | 'admin';
+  avatar?: string;
+  addresses?: Address[];
+  createdAt: string;
 }
 
-
-// Address interface (used in profile / checkout)
 export interface Address {
-  _id?: string;                     // MongoDB address ID
-  name: string;                     // Recipient name
-  phone: string;                    // Contact phone number
-  street: string;                   // Street address
-  city: string;                     // City
-  state: string;                    // State
-  pincode: string;                  // Postal code
-  country: string;                  // Country
-  isDefault?: boolean;              // Default address flag
+  _id?: string;
+  name: string;
+  phone: string;
+  street: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+  isDefault?: boolean;
 }
 
 
@@ -44,20 +37,17 @@ export interface Address {
 // Auth Payload Types
 // ===============================
 
-// Login payload structure
 export interface LoginCredentials {
-  email: string;                    // User email
-  password: string;                 // User password
+  email: string;
+  password: string;
 }
 
-
-// Register payload structure (from frontend form)
 export interface RegisterData {
-  firstName: string;                // First name
-  lastName: string;                 // Last name
-  email: string;                    // Email
-  password: string;                 // Password
-  phone?: string;                   // Optional phone number
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone?: string;
 }
 
 
@@ -65,11 +55,9 @@ export interface RegisterData {
 // Auth API Response Type
 // ===============================
 
-// Expected authentication response from backend
 export interface AuthResponse {
-  user: User;                       // Authenticated user data
-  accessToken: string;              // Short-lived JWT token
-  refreshToken: string;             // Long-lived refresh token
+  user: User;
+  accessToken: string;
 }
 
 
@@ -77,31 +65,22 @@ export interface AuthResponse {
 // Auth Service (API Layer)
 // ===============================
 
-// authService handles ALL authentication-related API calls
 export const authService = {
 
   // -------------------------------
   // Login API
   // -------------------------------
   async login(credentials: LoginCredentials) {
-
-    // Send login request to backend
-    // POST /api/v1/auth/login
     const response = await api.post<AuthResponse>(
       '/auth/login',
       credentials
     );
 
-    // If login succeeds, store tokens locally
     if (response.success && response.data) {
-      const { accessToken, refreshToken } =
-        response.data as unknown as AuthResponse;
-
+      const { accessToken } = response.data;
       localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
     }
 
-    // Return full response to AuthContext
     return response;
   },
 
@@ -110,13 +89,9 @@ export const authService = {
   // Register API
   // -------------------------------
   async register(data: RegisterData) {
-
-    // Send register request to backend
-    // POST /api/v1/auth/register
-    const response = await api.post<AuthResponse>(
+    return api.post<AuthResponse>(
       '/auth/register',
       {
-        // Backend expects these fields EXACTLY
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -124,29 +99,17 @@ export const authService = {
         phone: data.phone || '',
       }
     );
-
-    // DO NOT store tokens after registration
-    // User must verify email before they can login
-    // Tokens are only stored after successful login
-
-    // Return response to AuthContext
-    return response;
   },
-
 
 
   // -------------------------------
   // Logout API
   // -------------------------------
   async logout() {
-
-    // Notify backend about logout (optional)
-    // POST /api/v1/auth/logout
     await api.post('/auth/logout');
 
-    // Clear tokens from browser storage
+    // ❌ Only remove access token
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
   },
 
 
@@ -154,21 +117,7 @@ export const authService = {
   // Get Logged-in User Profile
   // -------------------------------
   async getProfile() {
-
-    // Fetch user profile using access token
-    // GET /api/v1/auth/me
     return api.get<{ user: User }>('/auth/me');
-  },
-
-
-  // -------------------------------
-  // Update User Profile
-  // -------------------------------
-  async updateProfile(data: Partial<User>) {
-
-    // Update user profile fields
-    // PUT /api/v1/auth/profile
-    return api.put<{ user: User }>('/auth/profile', data);
   },
 
 
@@ -176,28 +125,14 @@ export const authService = {
   // Refresh Access Token
   // -------------------------------
   async refreshToken() {
-
-    // Read refresh token from local storage
-    const refreshToken = localStorage.getItem('refreshToken');
-
-    // If no refresh token, abort
-    if (!refreshToken) {
-      return { success: false, error: 'No refresh token' };
-    }
-
-    // Request new access token
-    // POST /api/v1/auth/refresh-token
+    // ✅ NO BODY
+    // ✅ Refresh token sent automatically via cookie
     const response = await api.post<{ accessToken: string }>(
-      '/auth/refresh-token',
-      { refreshToken }
+      '/auth/refresh-token'
     );
 
-    // Store new access token if successful
     if (response.success && response.data) {
-      const { accessToken } =
-        response.data as unknown as { accessToken: string };
-
-      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('accessToken', response.data.accessToken);
     }
 
     return response;
@@ -208,8 +143,6 @@ export const authService = {
   // Check Authentication Status
   // -------------------------------
   isAuthenticated(): boolean {
-
-    // User is authenticated if access token exists
     return !!localStorage.getItem('accessToken');
   },
 };
