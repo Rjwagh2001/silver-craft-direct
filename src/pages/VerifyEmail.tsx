@@ -9,12 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Helmet } from 'react-helmet-async';
 
+// <- IMPORT the API_BASE_URL used across the app
+import { API_BASE_URL } from '@/lib/api';
 
 // ===============================
 // Verification States
 // ===============================
 type VerifyState = 'verifying' | 'success' | 'error' | 'no-token';
-
 
 // ===============================
 // VerifyEmail Component
@@ -28,7 +29,6 @@ const VerifyEmail = () => {
   // Get token from URL
   const token = searchParams.get('token');
 
-
   // ===============================
   // Verify Email on Mount
   // ===============================
@@ -39,16 +39,21 @@ const VerifyEmail = () => {
     }
 
     try {
-      // 🔐 Let backend handle verification (GET request)
-      window.location.href =
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/auth/verify-email?token=${token}`;
+      // Build backend verify URL from the shared API_BASE_URL
+      // API_BASE_URL already points to something like:
+      //   https://laxmi-silver-backend.onrender.com/api
+      // so we append '/v1/auth/verify-email'
+      const backendVerifyUrl = `${API_BASE_URL.replace(/\/$/, '')}/v1/auth/verify-email?token=${encodeURIComponent(token)}`;
+
+      // Redirect browser to backend GET verify endpoint
+      // Backend will verify, set cookie, and return success / redirect
+      window.location.href = backendVerifyUrl;
     } catch (error) {
       console.error('Verification redirect error:', error);
       setState('error');
       setErrorMessage('Verification link expired or invalid');
     }
   }, [token]);
-
 
   // ===============================
   // Render States
@@ -76,7 +81,7 @@ const VerifyEmail = () => {
               </div>
             )}
 
-            {/* Success State (fallback – backend usually redirects) */}
+            {/* Success State (fallback) */}
             {state === 'success' && (
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
