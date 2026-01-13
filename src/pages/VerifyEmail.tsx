@@ -3,13 +3,13 @@
 // ===============================
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Helmet } from 'react-helmet-async';
 
-// <- IMPORT the API_BASE_URL used across the app
+// Import shared API base from your client
 import { API_BASE_URL } from '@/lib/api';
 
 // ===============================
@@ -18,11 +18,23 @@ import { API_BASE_URL } from '@/lib/api';
 type VerifyState = 'verifying' | 'success' | 'error' | 'no-token';
 
 // ===============================
+// Helper: build robust verify URL
+// - handles cases where API_BASE_URL already includes /v1
+// - strips trailing slashes, avoids double segments
+// ===============================
+const buildVerifyUrl = (token: string) => {
+  const base = (API_BASE_URL || '').replace(/\/+$/, ''); // remove trailing slashes
+  // Consider base contains '.../v1' if it has '/v1' as segment
+  const hasV1 = /\/v\d+($|\/)/.test(base) || base.includes('/v1/');
+  const path = hasV1 ? 'auth/verify-email' : 'v1/auth/verify-email';
+  return `${base}/${path}?token=${encodeURIComponent(token)}`;
+};
+
+// ===============================
 // VerifyEmail Component
 // ===============================
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [state, setState] = useState<VerifyState>('verifying');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -39,24 +51,20 @@ const VerifyEmail = () => {
     }
 
     try {
-      // Build backend verify URL from the shared API_BASE_URL
-      // API_BASE_URL already points to something like:
-      //   https://laxmi-silver-backend.onrender.com/api
-      // so we append '/v1/auth/verify-email'
-      const backendVerifyUrl = `${API_BASE_URL.replace(/\/$/, '')}/v1/auth/verify-email?token=${encodeURIComponent(token)}`;
+      const verifyUrl = buildVerifyUrl(token);
 
-      // Redirect browser to backend GET verify endpoint
-      // Backend will verify, set cookie, and return success / redirect
-      window.location.href = backendVerifyUrl;
-    } catch (error) {
-      console.error('Verification redirect error:', error);
+      // redirect the browser directly to backend verify endpoint (GET)
+      // backend will set cookie and return success/redirect
+      window.location.href = verifyUrl;
+    } catch (err) {
+      console.error('Verification redirect error:', err);
       setState('error');
       setErrorMessage('Verification link expired or invalid');
     }
   }, [token]);
 
   // ===============================
-  // Render States
+  // Render States (UI unchanged)
   // ===============================
   return (
     <>
@@ -81,7 +89,7 @@ const VerifyEmail = () => {
               </div>
             )}
 
-            {/* Success State (fallback) */}
+            {/* Success (fallback) */}
             {state === 'success' && (
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
@@ -101,7 +109,7 @@ const VerifyEmail = () => {
               </div>
             )}
 
-            {/* Error State */}
+            {/* Error */}
             {state === 'error' && (
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full bg-red-100 flex items-center justify-center">
@@ -128,7 +136,7 @@ const VerifyEmail = () => {
               </div>
             )}
 
-            {/* No Token State */}
+            {/* No token */}
             {state === 'no-token' && (
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 flex items-center justify-center">
