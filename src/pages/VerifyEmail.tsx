@@ -2,69 +2,67 @@
 // Email Verification Page
 // ===============================
 
-import { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Helmet } from 'react-helmet-async';
-
-// Import shared API base from your client
-import { API_BASE_URL } from '@/lib/api';
+import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { CheckCircle, XCircle, Loader2, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Helmet } from "react-helmet-async";
 
 // ===============================
 // Verification States
 // ===============================
-type VerifyState = 'verifying' | 'success' | 'error' | 'no-token';
-
-// ===============================
-// Helper: build robust verify URL
-// - handles cases where API_BASE_URL already includes /v1
-// - strips trailing slashes, avoids double segments
-// ===============================
-const buildVerifyUrl = (token: string) => {
-  const base = (API_BASE_URL || '').replace(/\/+$/, ''); // remove trailing slashes
-  // Consider base contains '.../v1' if it has '/v1' as segment
-  const hasV1 = /\/v\d+($|\/)/.test(base) || base.includes('/v1/');
-  const path = hasV1 ? 'auth/verify-email' : 'v1/auth/verify-email';
-  return `${base}/${path}?token=${encodeURIComponent(token)}`;
-};
+type VerifyState = "verifying" | "success" | "error" | "no-token";
 
 // ===============================
 // VerifyEmail Component
 // ===============================
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
-  const [state, setState] = useState<VerifyState>('verifying');
-  const [errorMessage, setErrorMessage] = useState('');
+  const navigate = useNavigate();
+  const [state, setState] = useState<VerifyState>("verifying");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Get token from URL
-  const token = searchParams.get('token');
+  const status = searchParams.get("status");
+  const token = searchParams.get("token");
 
   // ===============================
-  // Verify Email on Mount
+  // Handle verification result
   // ===============================
   useEffect(() => {
-    if (!token) {
-      setState('no-token');
+    // No token & no status → invalid direct access
+    if (!status) {
+      setState("no-token");
       return;
     }
 
-    try {
-      const verifyUrl = buildVerifyUrl(token);
+    if (status === "success" && token) {
+      // ✅ Save access token
+      localStorage.setItem("accessToken", token);
 
-      // redirect the browser directly to backend verify endpoint (GET)
-      // backend will set cookie and return success/redirect
-      window.location.href = verifyUrl;
-    } catch (err) {
-      console.error('Verification redirect error:', err);
-      setState('error');
-      setErrorMessage('Verification link expired or invalid');
+      setState("success");
+
+      // Redirect to account after short delay
+      setTimeout(() => {
+        navigate("/account", { replace: true });
+      }, 1500);
+
+      return;
     }
-  }, [token]);
+
+    if (status === "invalid" || status === "missing") {
+      setState("error");
+      setErrorMessage("Verification link expired or invalid");
+      return;
+    }
+
+    // Fallback
+    setState("error");
+    setErrorMessage("Verification failed");
+  }, [status, token, navigate]);
 
   // ===============================
-  // Render States (UI unchanged)
+  // Render UI
   // ===============================
   return (
     <>
@@ -76,21 +74,23 @@ const VerifyEmail = () => {
         <Card className="w-full max-w-md">
           <CardContent className="pt-8 pb-8 text-center">
 
-            {/* Verifying State */}
-            {state === 'verifying' && (
+            {/* Verifying */}
+            {state === "verifying" && (
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
                   <Loader2 className="h-8 w-8 text-primary animate-spin" />
                 </div>
-                <h1 className="font-serif text-2xl">Verifying your email...</h1>
+                <h1 className="font-serif text-2xl">
+                  Verifying your email…
+                </h1>
                 <p className="text-muted-foreground">
                   Please wait while we verify your email address.
                 </p>
               </div>
             )}
 
-            {/* Success (fallback) */}
-            {state === 'success' && (
+            {/* Success */}
+            {state === "success" && (
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
                   <CheckCircle className="h-8 w-8 text-green-600" />
@@ -99,18 +99,13 @@ const VerifyEmail = () => {
                   Email Verified Successfully!
                 </h1>
                 <p className="text-muted-foreground">
-                  Redirecting to your account...
+                  Redirecting to your account…
                 </p>
-                <div className="pt-2">
-                  <Link to="/account">
-                    <Button variant="luxury">Go to Account</Button>
-                  </Link>
-                </div>
               </div>
             )}
 
             {/* Error */}
-            {state === 'error' && (
+            {state === "error" && (
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full bg-red-100 flex items-center justify-center">
                   <XCircle className="h-8 w-8 text-red-600" />
@@ -119,7 +114,7 @@ const VerifyEmail = () => {
                   Verification Failed
                 </h1>
                 <p className="text-muted-foreground">
-                  {errorMessage || 'Verification link expired or invalid.'}
+                  {errorMessage}
                 </p>
                 <div className="pt-4 space-y-3">
                   <Link to="/resend-verification" className="block">
@@ -137,14 +132,16 @@ const VerifyEmail = () => {
             )}
 
             {/* No token */}
-            {state === 'no-token' && (
+            {state === "no-token" && (
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 flex items-center justify-center">
                   <Mail className="h-8 w-8 text-amber-600" />
                 </div>
-                <h1 className="font-serif text-2xl">No Verification Token</h1>
+                <h1 className="font-serif text-2xl">
+                  No Verification Token
+                </h1>
                 <p className="text-muted-foreground">
-                  This page requires a valid verification link from your email.
+                  This page requires a valid verification link.
                 </p>
                 <div className="pt-4 space-y-3">
                   <Link to="/resend-verification" className="block">
