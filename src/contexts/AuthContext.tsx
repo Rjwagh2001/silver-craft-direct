@@ -27,7 +27,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
-  register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
+  register: (data: RegisterData) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -128,12 +128,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // ===============================
   useEffect(() => {
     const initAuth = async () => {
-      if (!authService.isAuthenticated()) {
-        setIsLoading(false);
-        return;
+      // Always attempt to fetch user from /auth/me
+      // This is the single source of truth for auth state
+      const hasToken = authService.isAuthenticated();
+      
+      if (hasToken) {
+        await fetchUser();
       }
-
-      await fetchUser();
+      
       setIsLoading(false);
     };
 
@@ -172,18 +174,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Register Function
   // ===============================
   const register = async (data: RegisterData) => {
-    const response = await authService.register(data);
+    try {
+      const response = await authService.register(data);
 
-    if (response.success && response.data) {
-      const userData = extractUserFromResponse(response.data);
-      
-      if (userData) {
-        setUser(userData);
-        return { success: true };
+      // Registration successful - but DO NOT set user state
+      // User must verify email before they can login
+      if (response.success) {
+        // Return success with message to check email
+        return { 
+          success: true, 
+          message: 'Please check your email to verify your account.' 
+        };
       }
-    }
 
-    return { success: false, error: response.error };
+      return { success: false, error: response.error };
+    } catch (error) {
+      console.error('Register error:', error);
+      return { success: false, error: 'Registration failed. Please try again.' };
+    }
   };
 
 

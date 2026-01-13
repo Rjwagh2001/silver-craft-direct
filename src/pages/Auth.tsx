@@ -222,11 +222,24 @@ const Auth = () => {
         });
 
         if (result.success) {
+          // Show success message - user must verify email
           toast({
-            title: 'Account created!',
-            description: 'Welcome to Laxmi Silver.',
+            title: 'Check your email!',
+            description: 'We sent you a verification link. Please verify your email to login.',
+            duration: 8000,
           });
-          navigate(from, { replace: true });
+          
+          // Switch to login mode (don't navigate away)
+          setIsLogin(true);
+          
+          // Clear form
+          setFormData({
+            firstName: '',
+            lastName: '',
+            email: formData.email, // Keep email for convenience
+            password: '',
+            phone: '',
+          });
         } else {
           toast({
             title: 'Registration failed',

@@ -107,36 +107,31 @@ export const authService = {
 
 
   // -------------------------------
-// Register API
-// -------------------------------
-async register(data: RegisterData) {
+  // Register API
+  // -------------------------------
+  async register(data: RegisterData) {
 
-  // Send register request to backend
-  // POST /api/v1/auth/register
-  const response = await api.post<AuthResponse>(
-    '/auth/register',
-    {
-      // Backend expects these fields EXACTLY
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      password: data.password,
-      phone: data.phone || '',
-    }
-  );
+    // Send register request to backend
+    // POST /api/v1/auth/register
+    const response = await api.post<AuthResponse>(
+      '/auth/register',
+      {
+        // Backend expects these fields EXACTLY
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        password: data.password,
+        phone: data.phone || '',
+      }
+    );
 
-  // If registration succeeds, store tokens
-  if (response.success && response.data) {
-    const { accessToken, refreshToken } =
-      response.data as unknown as AuthResponse;
+    // DO NOT store tokens after registration
+    // User must verify email before they can login
+    // Tokens are only stored after successful login
 
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-  }
-
-  // Return response to AuthContext
-  return response;
-},
+    // Return response to AuthContext
+    return response;
+  },
 
 
 

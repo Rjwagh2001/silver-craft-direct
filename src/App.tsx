@@ -20,6 +20,7 @@ import Reviews from "./pages/Reviews";
 import VideoFeed from "./pages/VideoFeed";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
+import VerifyEmail from "./pages/VerifyEmail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
                 <Route path="/videos" element={<VideoFeed />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
