@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { API_URL } from "@/config/api";
+
+// ✅ USE EXISTING API BASE URL
+import { API_BASE_URL } from "@/lib/api";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -23,17 +25,22 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/auth/forgot-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/auth/forgot-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ email }),
+        }
+      );
 
-      const data = await res.json();
+      const data = await response.json();
 
-      if (!res.ok) {
+      // Backend intentionally returns 200 even if user does not exist
+      if (!response.ok) {
         throw new Error(data?.message || "Request failed");
       }
 
@@ -45,7 +52,7 @@ const ForgotPassword = () => {
       });
 
       setEmail("");
-    } catch {
+    } catch (error) {
       toast({
         title: "Error",
         description: "Unable to send reset email. Please try again.",
@@ -68,7 +75,9 @@ const ForgotPassword = () => {
         <main className="flex-1 flex items-center justify-center px-4 py-12">
           <div className="w-full max-w-md">
             <div className="text-center mb-8">
-              <h1 className="font-serif text-3xl mb-2">Forgot Password</h1>
+              <h1 className="font-serif text-3xl mb-2">
+                Forgot Password
+              </h1>
               <p className="text-muted-foreground">
                 Enter your email to receive a reset link
               </p>
@@ -103,7 +112,10 @@ const ForgotPassword = () => {
             </form>
 
             <div className="mt-6 text-center text-sm">
-              <Link to="/auth" className="text-primary hover:underline">
+              <Link
+                to="/auth"
+                className="text-primary hover:underline"
+              >
                 Back to login
               </Link>
             </div>

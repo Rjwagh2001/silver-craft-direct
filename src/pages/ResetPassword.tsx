@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { API_URL } from "@/config/api";
+
+// ✅ USE EXISTING API BASE URL
+import { API_BASE_URL } from "@/lib/api";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -22,13 +24,18 @@ const ResetPassword = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // 🚫 Invalid or missing token
   if (!token) {
     return (
       <>
+        <Helmet>
+          <title>Invalid Reset Link — Laxmi Silver</title>
+        </Helmet>
+
         <Navbar />
-        <main className="flex-1 flex items-center justify-center py-20">
-          <p className="text-destructive">
-            Invalid or missing reset token.
+        <main className="flex-1 flex items-center justify-center py-20 px-4">
+          <p className="text-destructive text-center">
+            Invalid or missing password reset token.
           </p>
         </main>
         <Footer />
@@ -43,20 +50,24 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/auth/reset-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          password,
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/auth/reset-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            token,
+            password,
+          }),
+        }
+      );
 
-      const data = await res.json();
+      const data = await response.json();
 
-      if (!res.ok) {
+      if (!response.ok) {
         throw new Error(data?.message || "Reset failed");
       }
 
@@ -65,12 +76,13 @@ const ResetPassword = () => {
         description: "You can now log in with your new password.",
       });
 
+      // Redirect to login page
       navigate("/auth");
-    } catch {
+    } catch (error) {
       toast({
         title: "Reset failed",
         description:
-          "Reset link is invalid or expired. Please request a new one.",
+          "The reset link is invalid or has expired. Please request a new one.",
         variant: "destructive",
       });
     } finally {
@@ -90,7 +102,9 @@ const ResetPassword = () => {
         <main className="flex-1 flex items-center justify-center px-4 py-12">
           <div className="w-full max-w-md">
             <div className="text-center mb-8">
-              <h1 className="font-serif text-3xl mb-2">Reset Password</h1>
+              <h1 className="font-serif text-3xl mb-2">
+                Reset Password
+              </h1>
               <p className="text-muted-foreground">
                 Enter your new password
               </p>
