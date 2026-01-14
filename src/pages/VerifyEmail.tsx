@@ -8,6 +8,8 @@ import { CheckCircle, XCircle, Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Helmet } from "react-helmet-async";
+import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ===============================
 // Verification States
@@ -20,6 +22,7 @@ type VerifyState = "verifying" | "success" | "error" | "no-token";
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const [state, setState] = useState<VerifyState>("verifying");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -27,39 +30,75 @@ const VerifyEmail = () => {
   const token = searchParams.get("token");
 
   // ===============================
-  // Handle verification result
+  // Handle verification
   // ===============================
   useEffect(() => {
-    // No token & no status → invalid direct access
-    if (!status) {
+    const verifyToken = async () => {
+      // Case 1: Backend redirected with status=success (already verified)
+      if (status === "success" && token) {
+        localStorage.setItem("accessToken", token);
+        setState("success");
+        
+        // Refresh user in context
+        await refreshUser();
+        
+        setTimeout(() => {
+          navigate("/account", { replace: true });
+        }, 1500);
+        return;
+      }
+
+      // Case 2: Backend redirected with error status
+      if (status === "invalid" || status === "missing") {
+        setState("error");
+        setErrorMessage("Verification link expired or invalid");
+        return;
+      }
+
+      // Case 3: Direct click from email with verification token (no status)
+      // Need to call backend API to verify
+      if (token && !status) {
+        try {
+          const response = await api.post<{
+            user: unknown;
+            accessToken: string;
+            refreshToken: string;
+          }>("/auth/verify-email", { token });
+
+          if (response.success && response.data) {
+            const { accessToken, refreshToken } = response.data;
+            
+            if (accessToken) {
+              localStorage.setItem("accessToken", accessToken);
+            }
+            if (refreshToken) {
+              localStorage.setItem("refreshToken", refreshToken);
+            }
+
+            setState("success");
+            await refreshUser();
+
+            setTimeout(() => {
+              navigate("/account", { replace: true });
+            }, 1500);
+            return;
+          }
+
+          setState("error");
+          setErrorMessage(response.error || "Verification failed");
+        } catch {
+          setState("error");
+          setErrorMessage("Verification failed. Please try again.");
+        }
+        return;
+      }
+
+      // Case 4: No token at all
       setState("no-token");
-      return;
-    }
+    };
 
-    if (status === "success" && token) {
-      // ✅ Save access token
-      localStorage.setItem("accessToken", token);
-
-      setState("success");
-
-      // Redirect to account after short delay
-      setTimeout(() => {
-        navigate("/account", { replace: true });
-      }, 1500);
-
-      return;
-    }
-
-    if (status === "invalid" || status === "missing") {
-      setState("error");
-      setErrorMessage("Verification link expired or invalid");
-      return;
-    }
-
-    // Fallback
-    setState("error");
-    setErrorMessage("Verification failed");
-  }, [status, token, navigate]);
+    verifyToken();
+  }, [status, token, navigate, refreshUser]);
 
   // ===============================
   // Render UI
