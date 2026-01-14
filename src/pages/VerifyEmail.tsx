@@ -26,7 +26,6 @@ const VerifyEmail = () => {
   const [state, setState] = useState<VerifyState>("verifying");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const status = searchParams.get("status");
   const token = searchParams.get("token");
 
   // ===============================
@@ -34,71 +33,50 @@ const VerifyEmail = () => {
   // ===============================
   useEffect(() => {
     const verifyToken = async () => {
-      // Case 1: Backend redirected with status=success (already verified)
-      if (status === "success" && token) {
-        localStorage.setItem("accessToken", token);
-        setState("success");
-        
-        // Refresh user in context
-        await refreshUser();
-        
-        setTimeout(() => {
-          navigate("/account", { replace: true });
-        }, 1500);
+      // No token provided
+      if (!token) {
+        setState("no-token");
         return;
       }
 
-      // Case 2: Backend redirected with error status
-      if (status === "invalid" || status === "missing") {
-        setState("error");
-        setErrorMessage("Verification link expired or invalid");
-        return;
-      }
+      // Call backend to verify token
+      try {
+        const response = await api.post<{
+          user: unknown;
+          accessToken: string;
+        }>("/auth/verify-email", { token });
 
-      // Case 3: Direct click from email with verification token (no status)
-      // Need to call backend API to verify
-      if (token && !status) {
-        try {
-          const response = await api.post<{
-            user: unknown;
-            accessToken: string;
-            refreshToken: string;
-          }>("/auth/verify-email", { token });
+        if (response.success && response.data) {
+          const { accessToken } = response.data;
 
-          if (response.success && response.data) {
-            const { accessToken, refreshToken } = response.data;
-            
-            if (accessToken) {
-              localStorage.setItem("accessToken", accessToken);
-            }
-            if (refreshToken) {
-              localStorage.setItem("refreshToken", refreshToken);
-            }
-
-            setState("success");
-            await refreshUser();
-
-            setTimeout(() => {
-              navigate("/account", { replace: true });
-            }, 1500);
-            return;
+          // Store access token
+          if (accessToken) {
+            localStorage.setItem("accessToken", accessToken);
           }
 
-          setState("error");
-          setErrorMessage(response.error || "Verification failed");
-        } catch {
-          setState("error");
-          setErrorMessage("Verification failed. Please try again.");
-        }
-        return;
-      }
+          setState("success");
 
-      // Case 4: No token at all
-      setState("no-token");
+          // Refresh user in context
+          await refreshUser();
+
+          // Redirect to account page
+          setTimeout(() => {
+            navigate("/account", { replace: true });
+          }, 1500);
+          return;
+        }
+
+        // Handle error response
+        setState("error");
+        setErrorMessage(response.error || "Verification failed");
+      } catch {
+        setState("error");
+        setErrorMessage("Verification failed. Please try again.");
+      }
     };
 
     verifyToken();
-  }, [status, token, navigate, refreshUser]);
+  }, [token, navigate, refreshUser]);
 
   // ===============================
   // Render UI
