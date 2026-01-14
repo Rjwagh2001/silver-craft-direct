@@ -63,7 +63,7 @@ const VerifyEmail = () => {
             user: unknown;
             accessToken: string;
             refreshToken: string;
-          }>("/auth/verify-email", { token });
+          }>("/v1/auth/verify-email", { token });
 
           if (response.success && response.data) {
             const { accessToken, refreshToken } = response.data;
