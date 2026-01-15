@@ -137,3 +137,31 @@ export const useCategory = (slug: string) => {
     staleTime: 10 * 60 * 1000,
   });
 };
+
+// Hook to fetch category with products by slug
+export const useCategoryWithProducts = (slug: string | undefined, filters?: {
+  page?: number;
+  limit?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  sort?: string;
+}) => {
+  return useQuery({
+    queryKey: ['categoryWithProducts', slug, filters],
+    queryFn: async () => {
+      if (!slug) throw new Error('Category slug is required');
+      const response = await categoryService.getProductsBySlug(slug, filters);
+      if (response.success && response.data) {
+        const data = response.data;
+        return {
+          category: mapApiCategoryToCategory(data.category),
+          products: data.products.map(mapApiProductToProduct),
+          pagination: data.pagination,
+        };
+      }
+      throw new Error(response.error || 'Failed to fetch category products');
+    },
+    enabled: !!slug,
+    staleTime: 5 * 60 * 1000,
+  });
+};

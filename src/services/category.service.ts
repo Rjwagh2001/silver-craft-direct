@@ -28,6 +28,30 @@ export const categoryService = {
     return api.get<{ category: ApiCategory }>(`/categories/slug/${slug}`);
   },
 
+  async getProductsBySlug(slug: string, filters: {
+    page?: number;
+    limit?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: string;
+  } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined) params.append(key, String(value));
+    });
+    const queryString = params.toString();
+    return api.get<{
+      category: ApiCategory;
+      products: import('./product.service').ApiProduct[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+      };
+    }>(`/categories/slug/${slug}/products${queryString ? `?${queryString}` : ''}`);
+  },
+
   // Admin methods
   async create(data: Partial<ApiCategory>) {
     return api.post<{ category: ApiCategory }>('/categories', data);
