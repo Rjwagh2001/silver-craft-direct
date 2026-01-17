@@ -19,9 +19,15 @@ export interface Order {
   items: OrderItem[];
   totalAmount: number;
   shippingAddress: Address;
-  paymentMethod: 'razorpay' | 'cod';
+  paymentMethod: 'online' | 'cod';
   paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
-  orderStatus: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  orderStatus:
+    | 'pending'
+    | 'confirmed'
+    | 'processing'
+    | 'shipped'
+    | 'delivered'
+    | 'cancelled';
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   notes?: string;
@@ -36,7 +42,7 @@ export interface Order {
 
 export interface CreateOrderData {
   shippingAddress: Address;
-  paymentMethod: 'razorpay' | 'cod';
+  paymentMethod: 'online' | 'cod';
   notes?: string;
 }
 
@@ -65,7 +71,9 @@ export const orderService = {
         if (value !== undefined) params.append(key, String(value));
       });
     }
-    return api.get<{ orders: Order[]; pagination: unknown }>(`/orders/all/orders?${params.toString()}`);
+    return api.get<{ orders: Order[]; pagination: unknown }>(
+      `/orders/all/orders?${params.toString()}`
+    );
   },
 
   async updateStatus(id: string, status: string, note?: string) {

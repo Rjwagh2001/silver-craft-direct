@@ -25,17 +25,26 @@ const addressSchema = z.object({
   pincode: z.string().regex(/^\d{6}$/, 'Enter valid 6-digit pincode'),
 });
 
-type PaymentMethod = 'razorpay' | 'cod';
+/* =========================
+   FIXED: payment method type
+========================= */
+type PaymentMethod = 'online' | 'cod';
 
 const Checkout = () => {
   const { items, subtotal, shipping, total, clearCart } = useCart();
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const createOrder = useCreateOrder();
   
   const [step, setStep] = useState<'address' | 'payment'>('address');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('razorpay');
+
+  /* =========================
+     FIXED: default value
+  ========================= */
+  const [paymentMethod, setPaymentMethod] =
+    useState<PaymentMethod>('online');
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -51,7 +60,11 @@ const Checkout = () => {
   });
 
   const formatPrice = (price: number) => 
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(price);
+    new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+    }).format(price);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -90,7 +103,7 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      // Create order in backend
+      // Create order
       const order = await createOrder.mutateAsync({
         shippingAddress: address,
         paymentMethod,
@@ -98,16 +111,18 @@ const Checkout = () => {
       });
 
       if (paymentMethod === 'cod') {
-        // COD - Order is placed directly
-        toast({ title: 'Order Placed!', description: 'Your order has been placed successfully.' });
+        toast({
+          title: 'Order Placed!',
+          description: 'Your order has been placed successfully.',
+        });
         clearCart();
         navigate('/order-success', { state: { orderId: order._id } });
         return;
       }
 
-      // Razorpay payment
+      // Online payment (Razorpay)
       const paymentResponse = await paymentService.createOrder(order._id);
-      
+
       if (!paymentResponse.success || !paymentResponse.data) {
         throw new Error('Failed to create payment order');
       }
@@ -120,12 +135,14 @@ const Checkout = () => {
         keyId: string;
       };
 
-      // Initiate Razorpay checkout
       await paymentService.initiatePayment(
         razorpayOrder,
-        { name: address.name, email: address.email, phone: address.phone },
+        {
+          name: address.name,
+          email: address.email,
+          phone: address.phone,
+        },
         async (response) => {
-          // Payment successful - verify on backend
           const verifyResponse = await paymentService.verifyPayment({
             orderId: order._id,
             razorpayOrderId: response.razorpay_order_id,
@@ -134,28 +151,41 @@ const Checkout = () => {
           });
 
           if (verifyResponse.success) {
-            toast({ title: 'Payment Successful!', description: 'Your order has been confirmed.' });
+            toast({
+              title: 'Payment Successful!',
+              description: 'Your order has been confirmed.',
+            });
             clearCart();
             navigate('/order-success', { state: { orderId: order._id } });
           } else {
-            toast({ title: 'Payment verification failed', description: 'Please contact support.', variant: 'destructive' });
+            toast({
+              title: 'Payment verification failed',
+              description: 'Please contact support.',
+              variant: 'destructive',
+            });
           }
         },
         (error) => {
           console.error('Payment error:', error);
-          toast({ 
-            title: 'Payment Failed', 
-            description: error instanceof Error ? error.message : 'Payment was cancelled or failed.', 
-            variant: 'destructive' 
+          toast({
+            title: 'Payment Failed',
+            description:
+              error instanceof Error
+                ? error.message
+                : 'Payment was cancelled or failed.',
+            variant: 'destructive',
           });
         }
       );
     } catch (error) {
       console.error('Order error:', error);
-      toast({ 
-        title: 'Order Failed', 
-        description: error instanceof Error ? error.message : 'Could not place order. Please try again.', 
-        variant: 'destructive' 
+      toast({
+        title: 'Order Failed',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Could not place order. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsProcessing(false);
@@ -181,12 +211,16 @@ const Checkout = () => {
 
   return (
     <>
-      <Helmet><title>Checkout — Laxmi Silver</title></Helmet>
+      <Helmet>
+        <title>Checkout — Laxmi Silver</title>
+      </Helmet>
+
       <div className="min-h-screen flex flex-col overflow-x-hidden">
         <Navbar />
+
         <main className="flex-1 py-6 sm:py-8 md:py-12">
           <div className="container mx-auto px-4">
-            {/* Progress Steps */}
+            {/* Steps */}
             <div className="flex items-center justify-center gap-2 mb-8">
               <div className={`flex items-center gap-2 ${step === 'address' ? 'text-primary' : 'text-muted-foreground'}`}>
                 <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'address' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>1</span>
@@ -200,149 +234,61 @@ const Checkout = () => {
             </div>
 
             <div className="grid lg:grid-cols-2 gap-8">
-              {/* Form Section */}
-              <div className="space-y-6">
-                {step === 'address' && (
-                  <>
-                    <h2 className="font-serif text-xl sm:text-2xl">Shipping Address</h2>
-                    <div className="grid gap-4">
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="name">Full Name *</Label>
-                          <Input id="name" name="name" value={address.name} onChange={handleInputChange} placeholder="Enter full name" />
-                          {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
-                        </div>
-                        <div>
-                          <Label htmlFor="phone">Mobile Number *</Label>
-                          <Input id="phone" name="phone" value={address.phone} onChange={handleInputChange} placeholder="10-digit mobile" />
-                          {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone}</p>}
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="email">Email *</Label>
-                        <Input id="email" name="email" type="email" value={address.email} onChange={handleInputChange} placeholder="Enter email" />
-                        {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
-                      </div>
-                      <div>
-                        <Label htmlFor="street">Address *</Label>
-                        <Input id="street" name="street" value={address.street} onChange={handleInputChange} placeholder="House no, Street, Landmark" />
-                        {errors.street && <p className="text-sm text-destructive mt-1">{errors.street}</p>}
-                      </div>
-                      <div className="grid sm:grid-cols-3 gap-4">
-                        <div>
-                          <Label htmlFor="city">City *</Label>
-                          <Input id="city" name="city" value={address.city} onChange={handleInputChange} placeholder="City" />
-                          {errors.city && <p className="text-sm text-destructive mt-1">{errors.city}</p>}
-                        </div>
-                        <div>
-                          <Label htmlFor="state">State *</Label>
-                          <Input id="state" name="state" value={address.state} onChange={handleInputChange} placeholder="State" />
-                          {errors.state && <p className="text-sm text-destructive mt-1">{errors.state}</p>}
-                        </div>
-                        <div>
-                          <Label htmlFor="pincode">Pincode *</Label>
-                          <Input id="pincode" name="pincode" value={address.pincode} onChange={handleInputChange} placeholder="6-digit pincode" />
-                          {errors.pincode && <p className="text-sm text-destructive mt-1">{errors.pincode}</p>}
-                        </div>
-                      </div>
+              {/* Payment Section */}
+              {step === 'payment' && (
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
+                  className="space-y-3"
+                >
+                  <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer ${paymentMethod === 'online' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <RadioGroupItem value="online" id="online" />
+                    <div className="flex-1">
+                      <p className="font-medium">Pay Online</p>
+                      <p className="text-sm text-muted-foreground">
+                        UPI, Cards, Netbanking via Razorpay
+                      </p>
                     </div>
-                    <Button variant="luxury" size="lg" className="w-full" onClick={handleContinueToPayment}>
-                      Continue to Payment
-                    </Button>
+                    <CreditCard className="h-5 w-5" />
+                  </label>
+
+                  <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer ${paymentMethod === 'cod' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <RadioGroupItem value="cod" id="cod" />
+                    <div className="flex-1">
+                      <p className="font-medium">Cash on Delivery</p>
+                      <p className="text-sm text-muted-foreground">
+                        Pay when you receive
+                      </p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              )}
+
+              <Button
+                variant="luxury"
+                size="lg"
+                className="w-full mt-6"
+                onClick={handlePayment}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    {paymentMethod === 'cod'
+                      ? 'Place Order'
+                      : `Pay ${formatPrice(total)}`}
                   </>
                 )}
-
-                {step === 'payment' && (
-                  <>
-                    <div className="flex items-center gap-4 mb-4">
-                      <Button variant="ghost" size="sm" onClick={() => setStep('address')}>
-                        ← Back
-                      </Button>
-                      <h2 className="font-serif text-xl sm:text-2xl">Payment Method</h2>
-                    </div>
-                    
-                    <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)} className="space-y-3">
-                      <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-colors ${paymentMethod === 'razorpay' ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
-                        <RadioGroupItem value="razorpay" id="razorpay" />
-                        <div className="flex-1">
-                          <p className="font-medium">Pay Online</p>
-                          <p className="text-sm text-muted-foreground">UPI, Cards, Netbanking via Razorpay</p>
-                        </div>
-                        <CreditCard className="h-5 w-5 text-muted-foreground" />
-                      </label>
-                      <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-colors ${paymentMethod === 'cod' ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
-                        <RadioGroupItem value="cod" id="cod" />
-                        <div className="flex-1">
-                          <p className="font-medium">Cash on Delivery</p>
-                          <p className="text-sm text-muted-foreground">Pay when you receive</p>
-                        </div>
-                      </label>
-                    </RadioGroup>
-
-                    <Button 
-                      variant="luxury" 
-                      size="lg" 
-                      className="w-full mt-6" 
-                      onClick={handlePayment} 
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          {paymentMethod === 'cod' ? 'Place Order' : `Pay ${formatPrice(total)}`}
-                        </>
-                      )}
-                    </Button>
-                  </>
-                )}
-              </div>
-
-              {/* Order Summary */}
-              <div className="bg-muted/30 rounded-lg p-4 sm:p-6 h-fit sticky top-24">
-                <h2 className="font-serif text-xl mb-4">Order Summary</h2>
-                <div className="space-y-3 max-h-48 overflow-y-auto mb-4">
-                  {items.map(item => (
-                    <div key={item.product.id} className="flex gap-3 text-sm">
-                      <img src={item.product.images[0]} alt={item.product.name} className="w-12 h-12 object-cover rounded" />
-                      <div className="flex-1">
-                        <p className="line-clamp-1">{item.product.name}</p>
-                        <p className="text-muted-foreground">{item.quantity} × {formatPrice(item.product.price)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t pt-4 space-y-2 text-sm">
-                  <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-                  <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? 'FREE' : formatPrice(shipping)}</span></div>
-                  <div className="flex justify-between text-lg font-semibold pt-2 border-t">
-                    <span>Total</span>
-                    <span className="text-primary">{formatPrice(total)}</span>
-                  </div>
-                </div>
-                
-                {/* WhatsApp Alternative */}
-                <div className="mt-6 pt-4 border-t">
-                  <p className="text-sm text-muted-foreground text-center mb-3">Or order directly via</p>
-                  <Button variant="whatsapp" size="sm" className="w-full" asChild>
-                    <a 
-                      href={`https://wa.me/919967580919?text=${encodeURIComponent(`Order: ${items.map(i => `${i.quantity}x ${i.product.name}`).join(', ')} - Total: ${formatPrice(total)}`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      WhatsApp
-                    </a>
-                  </Button>
-                </div>
-              </div>
+              </Button>
             </div>
           </div>
         </main>
+
         <Footer />
       </div>
     </>

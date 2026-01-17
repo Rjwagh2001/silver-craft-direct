@@ -1,4 +1,4 @@
-import { api, API_BASE_URL } from '@/lib/api';
+import { api } from '@/lib/api';
 
 export interface RazorpayOrder {
   orderId: string;
@@ -17,15 +17,23 @@ export interface PaymentVerification {
 
 export const paymentService = {
   async createOrder(orderId: string) {
-    return api.post<RazorpayOrder>('/payments/create-order', { orderId });
+    return api.post<{
+      success: boolean;
+      data: RazorpayOrder;
+    }>('/payments/create-order', { orderId });
   },
 
   async verifyPayment(data: PaymentVerification) {
-    return api.post<{ success: boolean; order: unknown }>('/payments/verify', data);
+    return api.post<{
+      success: boolean;
+      data: { order: unknown };
+    }>('/payments/verify', data);
   },
 
   async getStatus(orderId: string) {
-    return api.get<{ paymentStatus: string; amount: number }>(`/payments/${orderId}/status`);
+    return api.get<{ paymentStatus: string; amount: number }>(
+      `/payments/${orderId}/status`
+    );
   },
 
   // Razorpay checkout integration
@@ -47,7 +55,11 @@ export const paymentService = {
   async initiatePayment(
     razorpayOrder: RazorpayOrder,
     userDetails: { name: string; email: string; phone: string },
-    onSuccess: (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => void,
+    onSuccess: (response: {
+      razorpay_payment_id: string;
+      razorpay_order_id: string;
+      razorpay_signature: string;
+    }) => void,
     onError: (error: unknown) => void
   ) {
     const loaded = await this.loadRazorpayScript();
@@ -80,7 +92,12 @@ export const paymentService = {
       },
     };
 
-    const Razorpay = (window as unknown as { Razorpay: new (options: unknown) => { open: () => void } }).Razorpay;
+    const Razorpay = (
+      window as unknown as {
+        Razorpay: new (options: unknown) => { open: () => void };
+      }
+    ).Razorpay;
+
     const rzp = new Razorpay(options);
     rzp.open();
   },
