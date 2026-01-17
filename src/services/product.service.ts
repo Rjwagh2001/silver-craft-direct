@@ -110,19 +110,28 @@ export const productService = {
 };
 
 // Helper to convert API product to frontend Product type
-export const mapApiProductToProduct = (apiProduct: ApiProduct) => ({
-  id: apiProduct._id,
-  name: apiProduct.name,
-  slug: apiProduct.slug,
-  category: apiProduct.category.toLowerCase() as 'bangles' | 'rings' | 'chains' | 'anklets' | 'earrings' | 'bracelets' | 'bridal',
-  price: apiProduct.price.sellingPrice,
-  originalPrice: apiProduct.price.discount > 0 ? apiProduct.price.basePrice : undefined,
-  weight: `${apiProduct.weight}g`,
-  purity: apiProduct.purity,
-  description: apiProduct.description,
-  images: apiProduct.images.map(img => img.url),
-  inStock: apiProduct.stock.quantity > 0,
-  isNew: new Date(apiProduct.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days
-  isBestseller: apiProduct.isFeatured,
-  sku: apiProduct._id.slice(-8).toUpperCase(),
-});
+export const mapApiProductToProduct = (apiProduct: ApiProduct) => {
+  // Prioritize isPrimary image first, then fallback to original order
+  const sortedImages = [...apiProduct.images].sort((a, b) => {
+    if (a.isPrimary && !b.isPrimary) return -1;
+    if (!a.isPrimary && b.isPrimary) return 1;
+    return 0;
+  });
+
+  return {
+    id: apiProduct._id,
+    name: apiProduct.name,
+    slug: apiProduct.slug,
+    category: apiProduct.category.toLowerCase() as 'bangles' | 'rings' | 'chains' | 'anklets' | 'earrings' | 'bracelets' | 'bridal',
+    price: apiProduct.price.sellingPrice,
+    originalPrice: apiProduct.price.discount > 0 ? apiProduct.price.basePrice : undefined,
+    weight: `${apiProduct.weight}g`,
+    purity: apiProduct.purity,
+    description: apiProduct.description,
+    images: sortedImages.map(img => img.url),
+    inStock: apiProduct.stock.quantity > 0,
+    isNew: new Date(apiProduct.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days
+    isBestseller: apiProduct.isFeatured,
+    sku: apiProduct._id.slice(-8).toUpperCase(),
+  };
+};

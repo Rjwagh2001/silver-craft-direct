@@ -1,10 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronRight, Filter, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useProducts, useCategories } from '@/hooks/use-products';
-import { categories as staticCategories, getCategoryBySlug } from '@/data/categories';
-import { products as staticProducts, getProductsByCategory } from '@/data/products';
+import { useCategoryWithProducts, useCategories } from '@/hooks/use-products';
 import ProductCard from '@/components/product/ProductCard';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -23,7 +21,7 @@ import {
 } from "@/components/ui/pagination";
 
 type SortOption = 'featured' | 'price-low' | 'price-high' | 'newest';
-const PRODUCTS_PER_PAGE = 12;
+const PRODUCTS_PER_PAGE = 10;
 
 const CategoryPage = () => {
   const { category } = useParams<{ category: string }>();
@@ -31,76 +29,26 @@ const CategoryPage = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch from API
-  const { data: apiCategories, isLoading: categoriesLoading } = useCategories();
-  const { data: apiProductsData, isLoading: productsLoading, error: productsError } = useProducts({
+  // Fetch categories for sidebar
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
+  // Fetch category with products from backend
+  const { 
+    data: categoryData, 
+    isLoading: categoryLoading, 
+    error: categoryError 
+  } = useCategoryWithProducts(category, {
     page: currentPage,
     limit: PRODUCTS_PER_PAGE,
-    category: category || undefined,
     minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
     maxPrice: priceRange[1] < 50000 ? priceRange[1] : undefined,
     sort: sortBy === 'price-low' ? 'price' : sortBy === 'price-high' ? '-price' : sortBy === 'newest' ? '-createdAt' : '-isFeatured',
   });
 
-  // Use API data or fall back to static data
-  const categories = apiCategories || staticCategories;
-  const currentCategory = category 
-    ? categories.find(c => c.slug === category) || getCategoryBySlug(category)
-    : null;
-
-  // Handle products - use API or fallback to static
-  const hasApiProducts = apiProductsData && apiProductsData.products && apiProductsData.products.length > 0;
-  
-  const categoryProducts = useMemo(() => {
-    if (hasApiProducts) {
-      return apiProductsData.products;
-    }
-    // Fallback to static data
-    return category ? getProductsByCategory(category) : staticProducts;
-  }, [hasApiProducts, apiProductsData, category]);
-
-  const sortedProducts = useMemo(() => {
-    // If using API data, it's already sorted/filtered
-    if (hasApiProducts) {
-      return categoryProducts;
-    }
-    
-    // Manual sort/filter for static data
-    let sorted = [...categoryProducts];
-    
-    sorted = sorted.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
-
-    switch (sortBy) {
-      case 'price-low':
-        sorted.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-high':
-        sorted.sort((a, b) => b.price - a.price);
-        break;
-      case 'newest':
-        sorted = sorted.filter(p => p.isNew).concat(sorted.filter(p => !p.isNew));
-        break;
-      case 'featured':
-      default:
-        sorted = sorted.filter(p => p.isBestseller).concat(sorted.filter(p => !p.isBestseller));
-    }
-    
-    return sorted;
-  }, [categoryProducts, sortBy, priceRange, hasApiProducts]);
-
-  // Pagination logic
-  const pagination = apiProductsData?.pagination as { total: number; pages: number; page: number } | undefined;
-  const totalPages = hasApiProducts && pagination
-    ? pagination.pages
-    : Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE);
-  
-  const paginatedProducts = useMemo(() => {
-    if (hasApiProducts) {
-      return sortedProducts; // API handles pagination
-    }
-    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-    return sortedProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
-  }, [sortedProducts, currentPage, hasApiProducts]);
+  const currentCategory = categoryData?.category;
+  const products = categoryData?.products || [];
+  const pagination = categoryData?.pagination;
+  const totalPages = pagination?.pages || 1;
 
   // Reset page when filters change
   useEffect(() => {
@@ -197,15 +145,90 @@ const CategoryPage = () => {
     return pages;
   };
 
-  const isLoading = productsLoading || categoriesLoading;
+  const isLoading = categoryLoading || categoriesLoading;
+
+  // If no category slug, show all categories grid
+  if (!category) {
+    return (
+      <>
+        <Helmet>
+          <title>All Collections — Laxmi Silver</title>
+          <meta name="description" content="Explore our complete collection of premium 92.5 sterling silver jewellery." />
+        </Helmet>
+
+        <div className="min-h-screen flex flex-col overflow-x-hidden pb-16 md:pb-0">
+          <Navbar />
+
+          <main className="flex-1">
+            {/* Hero Banner */}
+            <div className="relative h-40 sm:h-48 md:h-64 bg-gradient-to-r from-primary/10 via-background to-primary/5 overflow-hidden">
+              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1920&q=80')] bg-cover bg-center opacity-10" />
+              <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10">
+                <nav className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-4">
+                  <Link to="/" className="hover:text-primary transition-colors">Home</Link>
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="text-foreground">Collections</span>
+                </nav>
+                <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl">All Collections</h1>
+                <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base max-w-xl">
+                  Explore our complete collection of premium 92.5 sterling silver jewellery.
+                </p>
+              </div>
+            </div>
+
+            {/* Categories Grid */}
+            <section className="py-8 sm:py-12">
+              <div className="container mx-auto px-4">
+                {categoriesLoading ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="space-y-3">
+                        <Skeleton className="aspect-square rounded-lg" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                    {categories.map(cat => (
+                      <Link
+                        key={cat.id}
+                        to={`/collections/${cat.slug}`}
+                        className="group relative aspect-square overflow-hidden rounded-lg"
+                      >
+                        <img
+                          src={cat.image}
+                          alt={cat.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-6">
+                          <h3 className="font-serif text-white text-base sm:text-lg md:text-xl">{cat.name}</h3>
+                          <p className="text-white/70 text-xs sm:text-sm mt-0.5 sm:mt-1">{cat.productCount} Products</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          </main>
+
+          <Footer />
+          <MobileBottomNav />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <Helmet>
-        <title>{currentCategory ? `${currentCategory.name} — Laxmi Silver` : 'All Collections — Laxmi Silver'}</title>
+        <title>{currentCategory ? `${currentCategory.name} — Laxmi Silver` : 'Loading... — Laxmi Silver'}</title>
         <meta 
           name="description" 
-          content={currentCategory?.description || 'Explore our complete collection of premium 92.5 sterling silver jewellery.'} 
+          content={currentCategory?.description || 'Explore our premium 92.5 sterling silver jewellery collection.'} 
         />
       </Helmet>
 
@@ -215,7 +238,12 @@ const CategoryPage = () => {
         <main className="flex-1">
           {/* Hero Banner */}
           <div className="relative h-40 sm:h-48 md:h-64 bg-gradient-to-r from-primary/10 via-background to-primary/5 overflow-hidden">
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1920&q=80')] bg-cover bg-center opacity-10" />
+            {currentCategory?.image && (
+              <div 
+                className="absolute inset-0 bg-cover bg-center opacity-20"
+                style={{ backgroundImage: `url(${currentCategory.image})` }}
+              />
+            )}
             <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10">
               <nav className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-4">
                 <Link to="/" className="hover:text-primary transition-colors">Home</Link>
@@ -228,12 +256,21 @@ const CategoryPage = () => {
                   </>
                 )}
               </nav>
-              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
-                {currentCategory?.name || 'All Collections'}
-              </h1>
-              <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base max-w-xl line-clamp-2">
-                {currentCategory?.description || 'Explore our complete collection of premium 92.5 sterling silver jewellery.'}
-              </p>
+              {isLoading ? (
+                <>
+                  <Skeleton className="h-8 sm:h-10 md:h-12 w-48 sm:w-64" />
+                  <Skeleton className="h-4 sm:h-5 w-64 sm:w-96 mt-2" />
+                </>
+              ) : (
+                <>
+                  <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
+                    {currentCategory?.name || 'Collection'}
+                  </h1>
+                  <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base max-w-xl line-clamp-2">
+                    {currentCategory?.description || 'Explore our premium collection.'}
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
@@ -256,7 +293,7 @@ const CategoryPage = () => {
                       {isLoading ? (
                         'Loading products...'
                       ) : (
-                        `Showing ${paginatedProducts.length} of ${hasApiProducts && pagination ? pagination.total : sortedProducts.length} products`
+                        `Showing ${products.length} of ${pagination?.total || products.length} products`
                       )}
                     </p>
                     
@@ -309,11 +346,23 @@ const CategoryPage = () => {
                     </div>
                   )}
 
+                  {/* Error State */}
+                  {categoryError && !isLoading && (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground mb-4">
+                        Unable to load products. Please try again later.
+                      </p>
+                      <Button variant="outline" onClick={() => window.location.reload()}>
+                        Retry
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Products Grid */}
-                  {!isLoading && paginatedProducts.length > 0 && (
+                  {!isLoading && !categoryError && products.length > 0 && (
                     <>
                       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                        {paginatedProducts.map(product => (
+                        {products.map(product => (
                           <ProductCard key={product.id} product={product} />
                         ))}
                       </div>
@@ -360,7 +409,7 @@ const CategoryPage = () => {
                   )}
 
                   {/* No Products */}
-                  {!isLoading && paginatedProducts.length === 0 && (
+                  {!isLoading && !categoryError && products.length === 0 && (
                     <div className="text-center py-12 sm:py-16">
                       <p className="text-muted-foreground mb-4">No products found matching your criteria.</p>
                       <Button variant="outline" onClick={() => handleFilterChange([0, 50000])}>
@@ -368,46 +417,10 @@ const CategoryPage = () => {
                       </Button>
                     </div>
                   )}
-
-                  {/* Error State */}
-                  {productsError && !hasApiProducts && paginatedProducts.length === 0 && (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground mb-4">Unable to load products. Using cached data.</p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           </section>
-
-          {/* Category Grid (when showing all) */}
-          {!category && (
-            <section className="py-8 sm:py-12 bg-muted/20">
-              <div className="container mx-auto px-4">
-                <h2 className="font-serif text-xl sm:text-2xl md:text-3xl text-center mb-6 sm:mb-8">Shop by Category</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                  {categories.map(cat => (
-                    <Link
-                      key={cat.id}
-                      to={`/collections/${cat.slug}`}
-                      className="group relative aspect-square overflow-hidden rounded-lg"
-                    >
-                      <img
-                        src={cat.image}
-                        alt={cat.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-6">
-                        <h3 className="font-serif text-white text-base sm:text-lg md:text-xl">{cat.name}</h3>
-                        <p className="text-white/70 text-xs sm:text-sm mt-0.5 sm:mt-1">{cat.productCount} Products</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
         </main>
 
         <Footer />

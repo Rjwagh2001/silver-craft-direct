@@ -8,7 +8,7 @@
 // 2. Fallback production URL
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  'https://laxmi-silver-backend.onrender.com/api';
+  'https://laxmi-silver-backend.onrender.com/api/v1';
 
 
 // ===============================
@@ -60,15 +60,15 @@ class ApiClient {
 
   // Generic request method used by all HTTP verbs
   // Handles:
-  // - Authorization
+  // - Authorization (optional)
   // - JSON parsing
   // - Timeout (for cold starts)
   // - Error handling
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    timeout: number = 300000 // 5 minutes seconds to handle Render cold start
-
+    timeout: number = 300000, // 5 minutes to handle Render cold start
+    skipAuth: boolean = false // Skip Authorization header for public endpoints
   ): Promise<ApiResponse<T>> {
 
     // Build full request URL
@@ -80,10 +80,12 @@ class ApiClient {
       ...options.headers,
     };
 
-    // Attach Authorization header if token exists
-    const token = this.getAuthToken();
-    if (token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+    // Attach Authorization header if token exists and not skipped
+    if (!skipAuth) {
+      const token = this.getAuthToken();
+      if (token) {
+        (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+      }
     }
 
     try {
@@ -113,7 +115,9 @@ class ApiClient {
       }
 
       // Return standardized success response
-      return { success: true, data };
+      // Unwrap nested data if backend returns { data: { ... } }
+      const responseData = data.data !== undefined ? data.data : data;
+      return { success: true, data: responseData };
 
     } catch (error) {
 
@@ -136,10 +140,18 @@ class ApiClient {
 
 
   // ===============================
-  // HTTP GET
+  // HTTP GET (Authenticated)
   // ===============================
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'GET' });
+  }
+
+
+  // ===============================
+  // HTTP GET (Public - No Auth Header)
+  // ===============================
+  async publicGet<T>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: 'GET' }, 300000, true);
   }
 
 

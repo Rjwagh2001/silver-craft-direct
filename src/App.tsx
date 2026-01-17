@@ -23,11 +23,17 @@ import FAQ from "./pages/FAQ";
 import Reviews from "./pages/Reviews";
 import VideoFeed from "./pages/VideoFeed";
 import Account from "./pages/Account";
+import ProfilePage from "./pages/account/ProfilePage";
+import OrdersPage from "./pages/account/OrdersPage";
+import AddressesPage from "./pages/account/AddressesPage";
+import WishlistPage from "./pages/account/WishlistPage";
+import SettingsPage from "./pages/account/SettingsPage";
 import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
 import ResendVerification from "./pages/ResendVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import InternalUpload from "./pages/InternalUpload";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +67,11 @@ const App = () => (
                 <Route path="/videos" element={<VideoFeed />} />
 
                 <Route path="/account" element={<Account />} />
+                <Route path="/account/profile" element={<ProfilePage />} />
+                <Route path="/account/orders" element={<OrdersPage />} />
+                <Route path="/account/addresses" element={<AddressesPage />} />
+                <Route path="/account/wishlist" element={<WishlistPage />} />
+                <Route path="/account/settings" element={<SettingsPage />} />
                 <Route path="/auth" element={<Auth />} />
 
                 {/* ✅ PASSWORD FLOW ROUTES */}
@@ -69,6 +80,9 @@ const App = () => (
 
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/resend-verification" element={<ResendVerification />} />
+
+                {/* Hidden admin route - not in navigation */}
+                <Route path="/internal-upload" element={<InternalUpload />} />
 
                 {/* MUST BE LAST */}
                 <Route path="*" element={<NotFound />} />
