@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,9 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Upload, ShieldAlert } from 'lucide-react';
 
 const InternalUpload = () => {
-  const navigate = useNavigate();
-
-  // 🔐 AUTH CONTEXT (SINGLE SOURCE OF TRUTH)
+  // 🔐 AUTH CONTEXT (ONLY SOURCE OF TRUTH)
   const { user, isLoading: authLoading } = useAuth();
 
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -55,12 +52,7 @@ const InternalUpload = () => {
   useEffect(() => {
     if (authLoading) return;
 
-    if (!user) {
-      setIsAuthorized(false);
-      return;
-    }
-
-    if (user.role !== 'admin') {
+    if (!user || user.role !== 'admin') {
       setIsAuthorized(false);
       return;
     }
@@ -149,7 +141,7 @@ const InternalUpload = () => {
       const productData = {
         name,
         description,
-        category,
+        category, // slug
         metal,
         weight: parseFloat(weight),
         makingCharges: parseFloat(makingCharges) || 0,
@@ -234,7 +226,7 @@ const InternalUpload = () => {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* KEEP YOUR FULL FORM JSX HERE */}
+          {/* YOUR FULL FORM JSX GOES HERE */}
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? 'Creating...' : 'Create Product'}
           </Button>
