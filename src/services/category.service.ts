@@ -28,6 +28,7 @@ export const categoryService = {
     return api.get<{ category: ApiCategory }>(`/categories/slug/${slug}`);
   },
 
+  // Use publicGet to avoid sending Authorization header on public endpoint
   async getProductsBySlug(slug: string, filters: {
     page?: number;
     limit?: number;
@@ -40,7 +41,7 @@ export const categoryService = {
       if (value !== undefined) params.append(key, String(value));
     });
     const queryString = params.toString();
-    return api.get<{
+    return api.publicGet<{
       category: ApiCategory;
       products: import('./product.service').ApiProduct[];
       pagination: {
