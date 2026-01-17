@@ -53,25 +53,25 @@ const InternalUpload = () => {
 
   // Check admin role on mount
   useEffect(() => {
-    const checkAdminRole = () => {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        navigate('/');
-        return;
-      }
+  const checkAdminRole = () => {
+    const token = localStorage.getItem('accessToken');
 
-      const decoded = decodeJWT(token);
-      if (!decoded || decoded.role !== 'ADMIN') {
-        navigate('/');
-        return;
-      }
-
-      setIsAuthorized(true);
+    if (!token) {
       setIsCheckingAuth(false);
-    };
+      return;
+    }
 
-    checkAdminRole();
-  }, [navigate]);
+    const decoded = decodeJWT(token);
+
+    if (decoded?.role === 'ADMIN') {
+      setIsAuthorized(true);
+    }
+
+    setIsCheckingAuth(false);
+  };
+
+  checkAdminRole();
+}, []);
 
   // Fetch categories
   useEffect(() => {
