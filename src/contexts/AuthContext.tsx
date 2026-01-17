@@ -17,47 +17,41 @@ import {
   RegisterData,
 } from '@/services/auth.service';
 
-
 // ===============================
-// Auth Context Type Definition
+// Auth Context Type
 // ===============================
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
-  register: (data: RegisterData) => Promise<{ success: boolean; error?: string; message?: string }>;
+  login: (
+    credentials: LoginCredentials
+  ) => Promise<{ success: boolean; error?: string }>;
+  register: (
+    data: RegisterData
+  ) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
-
 // ===============================
-// Create Auth Context
+// Create Context
 // ===============================
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-
 // ===============================
-// Helper: Extract user from API response
+// Helper — FINAL CORRECT VERSION ✅
 // ===============================
 
 const extractUserFromResponse = (data: unknown): User | null => {
-  if (!data) return null;
+  if (!data || typeof data !== 'object') return null;
 
   const responseData = data as Record<string, unknown>;
 
-  // Handle nested response: { success: true, data: { user: {...} } }
-  if (responseData.data && typeof responseData.data === 'object') {
-    const innerData = responseData.data as Record<string, unknown>;
-    if (innerData.user) {
-      return innerData.user as User;
-    }
-  }
-
-  // Handle direct user object: { user: {...} }
+  // ✅ API CLIENT ALREADY UNWRAPS `data`
+  // so backend response shape is: { user: {...} }
   if (responseData.user) {
     return responseData.user as User;
   }
@@ -65,39 +59,40 @@ const extractUserFromResponse = (data: unknown): User | null => {
   return null;
 };
 
-
 // ===============================
-// Auth Provider Component
+// Auth Provider
 // ===============================
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // ===============================
+  // Fetch Current User (SOURCE OF TRUTH)
+  // ===============================
 
-  // ===============================
-  // Fetch Logged-in User
-  // ===============================
   const fetchUser = async (): Promise<boolean> => {
     try {
-      const response = await authService.getProfile();
+      // 1️⃣ Try with access token
+      const profileResponse = await authService.getProfile();
 
-      if (response.success && response.data) {
-        const userData = extractUserFromResponse(response.data);
+      if (profileResponse.success && profileResponse.data) {
+        const userData = extractUserFromResponse(profileResponse.data);
         if (userData) {
           setUser(userData);
           return true;
         }
       }
 
-      // Access token might be expired → try refresh
+      // 2️⃣ Try refresh token (httpOnly cookie)
       const refreshResponse = await authService.refreshToken();
 
       if (refreshResponse.success) {
-        const profileResponse = await authService.getProfile();
-        if (profileResponse.success && profileResponse.data) {
-          const userData = extractUserFromResponse(profileResponse.data);
+        const refreshedProfile = await authService.getProfile();
+        if (refreshedProfile.success && refreshedProfile.data) {
+          const userData = extractUserFromResponse(refreshedProfile.data);
           if (userData) {
             setUser(userData);
             return true;
@@ -105,41 +100,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      // ❌ Do NOT touch refresh token (httpOnly cookie)
+      // 3️⃣ Auth failed
       localStorage.removeItem('accessToken');
       setUser(null);
       return false;
-
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      console.error('Auth hydration failed:', error);
       setUser(null);
       return false;
     }
   };
 
-
   // ===============================
-  // Run fetchUser on App Load
+  // Init Auth on App Load (FIXED)
   // ===============================
-
 
   useEffect(() => {
-  const initAuth = async () => {
-    try {
-      // Always try to hydrate user using refresh token (httpOnly cookie)
-      await fetchUser();
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const initAuth = async () => {
+      try {
+        // ✅ ALWAYS try to hydrate using refresh cookie
+        await fetchUser();
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  initAuth();
-}, []);
-
+    initAuth();
+  }, []);
 
   // ===============================
-  // Login Function
+  // Login
   // ===============================
+
   const login = async (credentials: LoginCredentials) => {
     try {
       const response = await authService.login(credentials);
@@ -155,14 +147,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return { success: false, error: response.error };
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: 'Login failed. Please try again.' };
+      return { success: false, error: 'Login failed' };
     }
   };
 
+  // ===============================
+  // Register
+  // ===============================
 
-  // ===============================
-  // Register Function
-  // ===============================
   const register = async (data: RegisterData) => {
     try {
       const response = await authService.register(data);
@@ -170,39 +162,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (response.success) {
         return {
           success: true,
-          message: 'Please check your email to verify your account.',
+          message: 'Please verify your email before login.',
         };
       }
 
       return { success: false, error: response.error };
     } catch (error) {
       console.error('Register error:', error);
-      return { success: false, error: 'Registration failed. Please try again.' };
+      return { success: false, error: 'Registration failed' };
     }
   };
 
+  // ===============================
+  // Logout
+  // ===============================
 
-  // ===============================
-  // Logout Function
-  // ===============================
   const logout = async () => {
     await authService.logout();
     localStorage.removeItem('accessToken');
     setUser(null);
   };
 
+  // ===============================
+  // Refresh User
+  // ===============================
 
-  // ===============================
-  // Refresh User Manually
-  // ===============================
   const refreshUser = async () => {
     await fetchUser();
   };
 
+  // ===============================
+  // Provider
+  // ===============================
 
-  // ===============================
-  // Context Provider
-  // ===============================
   return (
     <AuthContext.Provider
       value={{
@@ -220,17 +212,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-
 // ===============================
 // useAuth Hook
 // ===============================
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth must be used within AuthProvider');
   }
-
   return context;
 };

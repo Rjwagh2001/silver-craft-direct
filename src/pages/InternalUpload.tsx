@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,9 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Upload, ShieldAlert } from 'lucide-react';
 
 const InternalUpload = () => {
-  const navigate = useNavigate();
-
-  // 🔐 Auth context (SOURCE OF TRUTH)
+  // 🔐 SINGLE SOURCE OF TRUTH
   const { user, isLoading: isAuthLoading } = useAuth();
 
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -50,7 +47,7 @@ const InternalUpload = () => {
   const [images, setImages] = useState<File[]>([]);
 
   // ===============================
-  // ADMIN AUTH CHECK (FIXED ✅)
+  // ADMIN AUTH CHECK (FINAL FIX ✅)
   // ===============================
   useEffect(() => {
     if (isAuthLoading) return;
@@ -232,25 +229,56 @@ const InternalUpload = () => {
   }
 
   // ===============================
-  // Render Form (UNCHANGED UI)
+  // Render Form
   // ===============================
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-2xl font-bold">
             Internal Product Upload
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Admin only - Add new products to the catalog
+          <p className="text-sm text-muted-foreground">
+            Admin only – Add new products
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* ALL YOUR FORM JSX — UNCHANGED */}
-          {/* (Exactly same as before) */}
+          <div>
+            <Label>Product Name</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} />
+          </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <div>
+            <Label>Description</Label>
+            <Textarea
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label>Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(cat => (
+                  <SelectItem key={cat._id} value={cat.slug}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Upload Images</Label>
+            <Input type="file" multiple onChange={handleImageChange} />
+          </div>
+
+          <Button type="submit" disabled={isSubmitting} className="w-full">
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
