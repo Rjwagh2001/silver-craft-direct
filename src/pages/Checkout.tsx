@@ -25,9 +25,6 @@ const addressSchema = z.object({
   pincode: z.string().regex(/^\d{6}$/, 'Enter valid 6-digit pincode'),
 });
 
-/* =========================
-   FIXED: payment method type
-========================= */
 type PaymentMethod = 'online' | 'cod';
 
 const Checkout = () => {
@@ -38,13 +35,7 @@ const Checkout = () => {
   const createOrder = useCreateOrder();
   
   const [step, setStep] = useState<'address' | 'payment'>('address');
-
-  /* =========================
-     FIXED: default value
-  ========================= */
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>('online');
-
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('online');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -103,11 +94,22 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      // Create order
+      // ✅ FIX: Convert cart items to backend format
+      const orderItems = items.map(item => ({
+        productId: item.product.id,
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price,
+        weight: item.product.weight || 0,
+        image: item.product.images?.[0] || '',
+      }));
+
+      // ✅ FIX: Include items in order creation
       const order = await createOrder.mutateAsync({
         shippingAddress: address,
         paymentMethod,
         notes: '',
+        items: orderItems, // ✅ Added items
       });
 
       if (paymentMethod === 'cod') {
@@ -234,57 +236,211 @@ const Checkout = () => {
             </div>
 
             <div className="grid lg:grid-cols-2 gap-8">
-              {/* Payment Section */}
-              {step === 'payment' && (
-                <RadioGroup
-                  value={paymentMethod}
-                  onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
-                  className="space-y-3"
-                >
-                  <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer ${paymentMethod === 'online' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                    <RadioGroupItem value="online" id="online" />
-                    <div className="flex-1">
-                      <p className="font-medium">Pay Online</p>
-                      <p className="text-sm text-muted-foreground">
-                        UPI, Cards, Netbanking via Razorpay
-                      </p>
+              {/* Address Form */}
+              {step === 'address' && (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-serif">Shipping Address</h2>
+                  
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        value={address.name}
+                        onChange={handleInputChange}
+                        placeholder="John Doe"
+                      />
+                      {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
                     </div>
-                    <CreditCard className="h-5 w-5" />
-                  </label>
 
-                  <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer ${paymentMethod === 'cod' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                    <RadioGroupItem value="cod" id="cod" />
-                    <div className="flex-1">
-                      <p className="font-medium">Cash on Delivery</p>
-                      <p className="text-sm text-muted-foreground">
-                        Pay when you receive
-                      </p>
+                    <div>
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        value={address.phone}
+                        onChange={handleInputChange}
+                        placeholder="9876543210"
+                      />
+                      {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone}</p>}
                     </div>
-                  </label>
-                </RadioGroup>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={address.email}
+                      onChange={handleInputChange}
+                      placeholder="john@example.com"
+                    />
+                    {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="street">Street Address</Label>
+                    <Input
+                      id="street"
+                      name="street"
+                      value={address.street}
+                      onChange={handleInputChange}
+                      placeholder="123 Main Street"
+                    />
+                    {errors.street && <p className="text-sm text-destructive mt-1">{errors.street}</p>}
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="city">City</Label>
+                      <Input
+                        id="city"
+                        name="city"
+                        value={address.city}
+                        onChange={handleInputChange}
+                        placeholder="Mumbai"
+                      />
+                      {errors.city && <p className="text-sm text-destructive mt-1">{errors.city}</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="state">State</Label>
+                      <Input
+                        id="state"
+                        name="state"
+                        value={address.state}
+                        onChange={handleInputChange}
+                        placeholder="Maharashtra"
+                      />
+                      {errors.state && <p className="text-sm text-destructive mt-1">{errors.state}</p>}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="pincode">Pincode</Label>
+                    <Input
+                      id="pincode"
+                      name="pincode"
+                      value={address.pincode}
+                      onChange={handleInputChange}
+                      placeholder="400001"
+                    />
+                    {errors.pincode && <p className="text-sm text-destructive mt-1">{errors.pincode}</p>}
+                  </div>
+
+                  <Button
+                    variant="luxury"
+                    size="lg"
+                    className="w-full"
+                    onClick={handleContinueToPayment}
+                  >
+                    Continue to Payment
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
               )}
 
-              <Button
-                variant="luxury"
-                size="lg"
-                className="w-full mt-6"
-                onClick={handlePayment}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    {paymentMethod === 'cod'
-                      ? 'Place Order'
-                      : `Pay ${formatPrice(total)}`}
-                  </>
-                )}
-              </Button>
+              {/* Payment Section */}
+              {step === 'payment' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-serif">Payment Method</h2>
+                    <Button variant="ghost" size="sm" onClick={() => setStep('address')}>
+                      Edit Address
+                    </Button>
+                  </div>
+
+                  <RadioGroup
+                    value={paymentMethod}
+                    onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
+                    className="space-y-3"
+                  >
+                    <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer ${paymentMethod === 'online' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                      <RadioGroupItem value="online" id="online" />
+                      <div className="flex-1">
+                        <p className="font-medium">Pay Online</p>
+                        <p className="text-sm text-muted-foreground">
+                          UPI, Cards, Netbanking via Razorpay
+                        </p>
+                      </div>
+                      <CreditCard className="h-5 w-5" />
+                    </label>
+
+                    <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer ${paymentMethod === 'cod' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                      <RadioGroupItem value="cod" id="cod" />
+                      <div className="flex-1">
+                        <p className="font-medium">Cash on Delivery</p>
+                        <p className="text-sm text-muted-foreground">
+                          Pay when you receive
+                        </p>
+                      </div>
+                    </label>
+                  </RadioGroup>
+
+                  <Button
+                    variant="luxury"
+                    size="lg"
+                    className="w-full mt-6"
+                    onClick={handlePayment}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        {paymentMethod === 'cod'
+                          ? 'Place Order'
+                          : `Pay ${formatPrice(total)}`}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {/* Order Summary */}
+              <div className="lg:sticky lg:top-4 h-fit">
+                <div className="bg-muted/30 rounded-lg p-6 space-y-4">
+                  <h2 className="text-xl font-serif">Order Summary</h2>
+                  
+                  <div className="space-y-3">
+                    {items.map((item) => (
+                      <div key={item.product.id} className="flex gap-3">
+                        <img
+                          src={item.product.images?.[0] || '/placeholder.jpg'}
+                          alt={item.product.name}
+                          className="w-16 h-16 rounded object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{item.product.name}</p>
+                          <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                        </div>
+                        <p className="font-medium">{formatPrice(item.product.price * item.quantity)}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t pt-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal</span>
+                      <span>{formatPrice(subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Shipping</span>
+                      <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                      <span>Total</span>
+                      <span>{formatPrice(total)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </main>
