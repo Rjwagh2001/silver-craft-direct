@@ -121,19 +121,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // ===============================
   // Run fetchUser on App Load
   // ===============================
+
+
   useEffect(() => {
-    const initAuth = async () => {
-      const hasAccessToken = authService.isAuthenticated();
-
-      if (hasAccessToken) {
-        await fetchUser();
-      }
-
+  const initAuth = async () => {
+    try {
+      // Always try to hydrate user using refresh token (httpOnly cookie)
+      await fetchUser();
+    } finally {
       setIsLoading(false);
-    };
+    }
+  };
 
-    initAuth();
-  }, []);
+  initAuth();
+}, []);
 
 
   // ===============================
