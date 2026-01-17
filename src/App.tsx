@@ -33,6 +33,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import ResendVerification from "./pages/ResendVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import InternalUpload from "./pages/InternalUpload";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,9 @@ const App = () => (
 
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/resend-verification" element={<ResendVerification />} />
+
+                {/* Hidden admin route - not in navigation */}
+                <Route path="/internal-upload" element={<InternalUpload />} />
 
                 {/* MUST BE LAST */}
                 <Route path="*" element={<NotFound />} />
