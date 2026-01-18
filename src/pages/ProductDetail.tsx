@@ -4,7 +4,6 @@ import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, Truck, Shield, M
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProduct, useProductsByCategory } from '@/hooks/use-products';
-import { getProductBySlug, getProductsByCategory } from '@/data/products';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/layout/Navbar';
@@ -23,17 +22,12 @@ const ProductDetail = () => {
   const { addItem } = useCart();
   const { toast } = useToast();
 
-  // Fetch from API
-  const { data: apiProduct, isLoading, error } = useProduct(slug || '');
-  
-  // Fallback to static data
-  const staticProduct = getProductBySlug(slug || '');
-  const product = apiProduct || staticProduct;
+  // ⭐ INDUSTRY STANDARD: Fetch only from API (no static fallback)
+  const { data: product, isLoading, error } = useProduct(slug || '');
 
   // Fetch related products
   const { data: relatedData } = useProductsByCategory(product?.category || '', { limit: 10 });
-  const staticRelated = product ? getProductsByCategory(product.category).filter(p => p.id !== product.id).slice(0, 10) : [];
-  const relatedProducts = (relatedData?.products || staticRelated).filter(p => p.id !== product?.id).slice(0, 10);
+  const relatedProducts = (relatedData?.products || []).filter(p => p.id !== product?.id).slice(0, 10);
 
   // Show sticky bar on scroll
   useEffect(() => {
@@ -91,13 +85,17 @@ const ProductDetail = () => {
     );
   }
 
-  if (!product) {
+  // Error or product not found
+  if (error || !product) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="text-center">
             <h1 className="text-2xl font-serif mb-4">Product Not Found</h1>
+            <p className="text-muted-foreground mb-6">
+              {error ? 'Failed to load product. Please try again.' : 'The product you are looking for does not exist.'}
+            </p>
             <Button variant="luxury" asChild>
               <Link to="/collections">Browse Collections</Link>
             </Button>
@@ -185,14 +183,14 @@ const ProductDetail = () => {
                       <>
                         <button
                           onClick={() => setSelectedImage(prev => prev === 0 ? product.images.length - 1 : prev - 1)}
-                          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 bg-background/90 rounded-full hover:bg-background transition-colors shadow-soft"
+                          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 bg-background/90 backdrop-blur-sm rounded-full hover:bg-background transition-colors shadow-soft"
                           aria-label="Previous image"
                         >
                           <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                         </button>
                         <button
                           onClick={() => setSelectedImage(prev => prev === product.images.length - 1 ? 0 : prev + 1)}
-                          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 bg-background/90 rounded-full hover:bg-background transition-colors shadow-soft"
+                          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 bg-background/90 backdrop-blur-sm rounded-full hover:bg-background transition-colors shadow-soft"
                           aria-label="Next image"
                         >
                           <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
