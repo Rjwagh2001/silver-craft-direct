@@ -15,7 +15,6 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
-import { getErrorMessage, getErrorTitle, logError } from '@/utils/errorHandler';
 
 const addressSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -270,20 +269,23 @@ const Checkout = () => {
           }
         },
         (error) => {
-          logError(error, 'Payment');
+          console.error('❌ Payment error:', error);
+          const errorMsg = error instanceof Error ? error.message : 'Payment failed. Please try again.';
           toast({
-            title: getErrorTitle(error),
-            description: getErrorMessage(error),
+            title: 'Payment Failed',
+            description: errorMsg,
             variant: 'destructive',
           });
         }
       );
     } catch (error) {
-      logError(error, 'Order Creation');
+      console.error('❌ Order creation error:', error);
+      
+      const errorMsg = error instanceof Error ? error.message : 'Order failed. Please try again.';
       
       toast({
-        title: getErrorTitle(error),
-        description: getErrorMessage(error),
+        title: 'Order Failed',
+        description: errorMsg,
         variant: 'destructive',
       });
     } finally {
