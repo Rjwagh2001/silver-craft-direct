@@ -97,7 +97,7 @@ class ApiClient {
       const response = await fetch(url, {
         ...options,
         headers,
-        credentials: 'include',   // Allows cookies if backend uses them
+        credentials: 'omit',   // Allows cookies if backend uses them
         signal: controller.signal,
       });
 
