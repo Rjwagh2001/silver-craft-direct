@@ -15,10 +15,11 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; cla
   shipped: { label: 'Shipped', icon: Truck, className: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
   delivered: { label: 'Delivered', icon: CheckCircle, className: 'bg-green-100 text-green-800 border-green-200' },
   cancelled: { label: 'Cancelled', icon: XCircle, className: 'bg-red-100 text-red-800 border-red-200' },
+  returned: { label: 'Returned', icon: XCircle, className: 'bg-gray-100 text-gray-800 border-gray-200' },
 };
 
 const OrderCard = ({ order }: { order: Order }) => {
-  const status = statusConfig[order.orderStatus] || statusConfig.pending;
+  const status = statusConfig[order.status] || statusConfig.pending;
   const StatusIcon = status.icon;
 
   return (
@@ -53,8 +54,8 @@ const OrderCard = ({ order }: { order: Order }) => {
               className="w-12 h-12 rounded-lg border-2 border-background bg-muted overflow-hidden"
             >
               <img
-                src={item.product.images[0]?.url || '/placeholder.svg'}
-                alt={item.product.name}
+                src={item.image || '/placeholder.svg'}
+                alt={item.name}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -67,7 +68,7 @@ const OrderCard = ({ order }: { order: Order }) => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">
-            {order.items[0]?.product.name}
+            {order.items[0]?.name}
             {order.items.length > 1 && ` +${order.items.length - 1} more`}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -80,7 +81,7 @@ const OrderCard = ({ order }: { order: Order }) => {
       <div className="flex items-center justify-between pt-3 border-t border-border">
         <div>
           <p className="text-sm text-muted-foreground">Total</p>
-          <p className="font-semibold text-foreground">₹{order.totalAmount.toLocaleString('en-IN')}</p>
+          <p className="font-semibold text-foreground">₹{order.pricing.total.toLocaleString('en-IN')}</p>
         </div>
         <div className="flex items-center gap-1 text-sm text-primary group-hover:gap-2 transition-all">
           View Details
