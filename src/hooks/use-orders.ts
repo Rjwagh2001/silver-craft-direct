@@ -38,7 +38,12 @@ export const useCreateOrder = () => {
 
   return useMutation({
     mutationFn: async (data: CreateOrderData) => {
+      // ⭐ DEBUG: Log what we're about to send to the service
+      console.log('🎯 use-orders hook received:', JSON.stringify(data, null, 2));
+      console.log('🔍 Payment method in hook:', data.paymentMethod);
+      
       const response = await orderService.create(data);
+      
       if (response.success && response.data) {
         return (response.data as { order: Order }).order;
       }

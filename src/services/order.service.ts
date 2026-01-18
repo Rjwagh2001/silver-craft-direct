@@ -62,6 +62,16 @@ export interface CreateOrderData {
 
 export const orderService = {
   async create(data: CreateOrderData) {
+    // ⭐ DEBUG: Log what we're about to send to API
+    console.log('🌐 orderService.create received:', JSON.stringify(data, null, 2));
+    console.log('🔍 Payment method in service:', data.paymentMethod);
+    
+    // ⭐ CRITICAL: Ensure payment method is correct before sending
+    if (data.paymentMethod !== 'online' && data.paymentMethod !== 'cod') {
+      console.error('❌ INVALID PAYMENT METHOD IN SERVICE:', data.paymentMethod);
+      throw new Error(`Invalid payment method in service: ${data.paymentMethod}`);
+    }
+    
     return api.post<{ order: Order }>('/orders/create', data);
   },
 

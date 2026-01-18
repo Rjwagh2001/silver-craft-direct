@@ -206,9 +206,17 @@ const Checkout = () => {
         firstItem: orderItems[0],
         hasItems: !!orderPayload.items && orderPayload.items.length > 0,
       });
+      
+      // ⭐ CRITICAL: Double-check payment method hasn't been corrupted
+      if (orderPayload.paymentMethod !== 'online' && orderPayload.paymentMethod !== 'cod') {
+        console.error('❌ Payment method corrupted!', orderPayload.paymentMethod);
+        throw new Error(`Invalid payment method: ${orderPayload.paymentMethod}. Expected 'online' or 'cod'.`);
+      }
 
       // ⭐ Create order with validated payload
       const order = await createOrder.mutateAsync(orderPayload);
+      
+      console.log('✅ Order API returned:', order);
 
       console.log('✅ Order created successfully:', order);
 
