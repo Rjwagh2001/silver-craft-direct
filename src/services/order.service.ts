@@ -12,6 +12,16 @@ export interface OrderItem {
   price: number;
 }
 
+// ✅ NEW: Order item for creating orders (simplified format)
+export interface CreateOrderItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  weight?: number;
+  image?: string;
+}
+
 export interface Order {
   _id: string;
   orderNumber: string;
@@ -40,10 +50,14 @@ export interface Order {
   updatedAt: string;
 }
 
+// ✅ FIXED: Added items array
 export interface CreateOrderData {
   shippingAddress: Address;
+  billingAddress?: Address;
   paymentMethod: 'online' | 'cod';
+  items: CreateOrderItem[]; // ⭐ THIS WAS MISSING!
   notes?: string;
+  couponCode?: string;
 }
 
 export const orderService = {

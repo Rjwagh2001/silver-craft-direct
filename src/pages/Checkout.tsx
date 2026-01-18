@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateOrder } from '@/hooks/use-orders';
 import { paymentService } from '@/services/payment.service';
+import { CreateOrderItem } from '@/services/order.service'; // ✅ ADDED: Import CreateOrderItem
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Helmet } from 'react-helmet-async';
@@ -94,8 +95,8 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      // ✅ FIX: Convert cart items to backend format
-      const orderItems = items.map(item => ({
+      // ✅ FIXED: Convert cart items to backend format with proper typing
+      const orderItems: CreateOrderItem[] = items.map(item => ({
         productId: item.product.id,
         name: item.product.name,
         quantity: item.quantity,
@@ -104,13 +105,19 @@ const Checkout = () => {
         image: item.product.images?.[0] || '',
       }));
 
-      // ✅ FIX: Include items in order creation
+      console.log('📦 Creating order with items:', orderItems); // ✅ ADDED: Debug log
+      console.log('💳 Payment method:', paymentMethod); // ✅ ADDED: Debug log
+
+      // ✅ FIXED: Include items and billingAddress in order creation
       const order = await createOrder.mutateAsync({
         shippingAddress: address,
+        billingAddress: address, // ✅ ADDED: Billing address
         paymentMethod,
+        items: orderItems, // ✅ FIXED: Items with proper type
         notes: '',
-        items: orderItems, // ✅ Added items
       });
+
+      console.log('✅ Order created:', order); // ✅ ADDED: Debug log
 
       if (paymentMethod === 'cod') {
         toast({
