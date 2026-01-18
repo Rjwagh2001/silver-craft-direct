@@ -10,7 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateOrder } from '@/hooks/use-orders';
 import { paymentService } from '@/services/payment.service';
-import { cartService } from '@/services/cart.service';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Helmet } from 'react-helmet-async';
@@ -95,23 +94,23 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      // Step 1: Sync local cart items to backend cart
-      // Backend creates orders from its own cart collection, not request body
-      const cartItems = items.map(item => ({
+      // Build order items matching backend format
+      const orderItems = items.map(item => ({
         productId: item.product.id,
+        name: item.product.name,
         quantity: item.quantity,
+        price: item.product.price,
+        weight: typeof item.product.weight === 'number' ? item.product.weight : Number(item.product.weight) || 0,
+        image: item.product.images?.[0] || '',
       }));
 
-      const syncResult = await cartService.syncCart(cartItems);
-      if (!syncResult.success) {
-        throw new Error('Failed to sync cart with server');
-      }
-
-      // Step 2: Create order (backend reads from its cart)
+      // Create order with items included in request body
       const order = await createOrder.mutateAsync({
         shippingAddress: address,
         paymentMethod,
+        items: orderItems,
         notes: '',
+        couponCode: '',
       });
 
       if (paymentMethod === 'cod') {
