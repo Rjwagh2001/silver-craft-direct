@@ -109,7 +109,8 @@ export const productService = {
   },
 };
 
-// Helper to convert API product to frontend Product type
+// ⭐ UPDATED: Helper to convert API product to frontend Product type
+// Now preserves the _id field for backend compatibility
 export const mapApiProductToProduct = (apiProduct: ApiProduct) => {
   // Prioritize isPrimary image first, then fallback to original order
   const sortedImages = [...apiProduct.images].sort((a, b) => {
@@ -120,6 +121,7 @@ export const mapApiProductToProduct = (apiProduct: ApiProduct) => {
 
   return {
     id: apiProduct._id,
+    _id: apiProduct._id, // ⭐ PRESERVE _id for backend
     name: apiProduct.name,
     slug: apiProduct.slug,
     category: apiProduct.category.toLowerCase() as 'bangles' | 'rings' | 'chains' | 'anklets' | 'earrings' | 'bracelets' | 'bridal',

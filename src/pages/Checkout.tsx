@@ -92,33 +92,57 @@ const Checkout = () => {
   const handlePayment = async () => {
     if (!validateAddress()) return;
     
+    // ⭐ VALIDATION: Check if cart is empty
+    if (items.length === 0) {
+      toast({
+        title: 'Cart is Empty',
+        description: 'Please add items to cart before checkout',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // ⭐ VALIDATION: Check if all items have valid product IDs
+    const invalidItems = items.filter(item => !item.product._id && !item.product.id);
+    if (invalidItems.length > 0) {
+      toast({
+        title: 'Invalid Cart Items',
+        description: 'Some items in cart are invalid. Please refresh and try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setIsProcessing(true);
     
     try {
-      // Convert cart items to backend format
+      // ⭐ CRITICAL FIX: Convert cart items to backend format
+      // Use _id if available (from API), fallback to id for static products
       const orderItems: CreateOrderItem[] = items.map(item => ({
-        productId: item.product.id,
+        productId: item.product._id || item.product.id, // ⭐ THIS IS THE KEY FIX
         name: item.product.name,
         quantity: item.quantity,
         price: item.product.price,
-        weight: item.product.weight || 0,
+        weight: parseFloat(item.product.weight) || 0, // Parse weight string to number
         image: item.product.images?.[0] || '',
       }));
 
       console.log('📦 Creating order with items:', orderItems);
       console.log('💳 Payment method:', paymentMethod);
+      console.log('📍 Shipping address:', address);
 
-      // Create order with all required fields
+      // ⭐ Create order with all required fields including items array
       const order = await createOrder.mutateAsync({
         shippingAddress: address,
         billingAddress: address,
         paymentMethod,
-        items: orderItems,
+        items: orderItems, // ⭐ CRITICAL: Items are now included
         notes: '',
       });
 
-      console.log('✅ Order created:', order);
+      console.log('✅ Order created successfully:', order);
 
+      // COD flow
       if (paymentMethod === 'cod') {
         toast({
           title: 'Order Placed!',
@@ -129,7 +153,7 @@ const Checkout = () => {
         return;
       }
 
-      // Online payment (Razorpay)
+      // Online payment (Razorpay) flow
       const paymentResponse = await paymentService.createOrder(order._id);
 
       if (!paymentResponse.success || !paymentResponse.data) {
@@ -187,7 +211,7 @@ const Checkout = () => {
         }
       );
     } catch (error) {
-      console.error('Order error:', error);
+      console.error('❌ Order creation failed:', error);
       toast({
         title: 'Order Failed',
         description:

@@ -1,5 +1,6 @@
 export interface Product {
   id: string;
+  _id?: string; // ⭐ ADD THIS - Backend MongoDB ID (optional for compatibility)
   name: string;
   slug: string;
   category: ProductCategory;
