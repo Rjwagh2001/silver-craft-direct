@@ -91,22 +91,46 @@ const Checkout = () => {
   const handlePayment = async () => {
     if (!validateAddress()) return;
     
+    // Validate cart is not empty
+    if (items.length === 0) {
+      toast({
+        title: 'Cart is Empty',
+        description: 'Please add items to cart before checkout',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setIsProcessing(true);
     
     try {
       // Build order items matching backend format
-      const orderItems = items.map(item => ({
-        productId: item.product.id,
-        name: item.product.name,
-        quantity: item.quantity,
-        price: item.product.price,
-        weight: typeof item.product.weight === 'number' ? item.product.weight : Number(item.product.weight) || 0,
-        image: item.product.images?.[0] || '',
-      }));
+      // Frontend stores weight as "9g" string, convert to number
+      const orderItems = items.map(item => {
+        // Parse weight: remove 'g' suffix and convert to number
+        let weightNum = 0;
+        if (typeof item.product.weight === 'number') {
+          weightNum = item.product.weight;
+        } else if (typeof item.product.weight === 'string') {
+          weightNum = parseFloat(item.product.weight.replace(/[^\d.]/g, '')) || 0;
+        }
+        
+        return {
+          productId: item.product.id, // Frontend uses id (mapped from _id)
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.price,
+          weight: weightNum,
+          image: item.product.images?.[0] || '',
+        };
+      });
+
+      console.log('Creating order with items:', orderItems);
 
       // Create order with items included in request body
       const order = await createOrder.mutateAsync({
         shippingAddress: address,
+        billingAddress: address, // Use same address for billing
         paymentMethod,
         items: orderItems,
         notes: '',
