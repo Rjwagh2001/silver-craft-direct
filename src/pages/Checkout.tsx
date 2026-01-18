@@ -102,7 +102,7 @@ const Checkout = () => {
       return;
     }
 
-    // ⭐ VALIDATION: Check if all items have valid product IDs
+    // ⭐ VALIDATION: Check if all items have valid product IDs . sd
     const invalidItems = items.filter(item => !item.product._id && !item.product.id);
     if (invalidItems.length > 0) {
       toast({
