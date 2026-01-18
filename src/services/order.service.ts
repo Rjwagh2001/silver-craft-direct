@@ -46,6 +46,12 @@ export interface CreateOrderData {
   notes?: string;
 }
 
+// Sync local cart to backend before checkout
+export interface SyncCartItem {
+  productId: string;
+  quantity: number;
+}
+
 export const orderService = {
   async create(data: CreateOrderData) {
     return api.post<{ order: Order }>('/orders/create', data);
