@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, CreditCard, Loader2 } from 'lucide-react';
+import { ChevronRight, CreditCard, MessageCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateOrder } from '@/hooks/use-orders';
 import { paymentService } from '@/services/payment.service';
-import { CreateOrderItem } from '@/services/order.service'; // ✅ ADDED: Import CreateOrderItem
+import { CreateOrderItem } from '@/services/order.service';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Helmet } from 'react-helmet-async';
@@ -92,21 +92,11 @@ const Checkout = () => {
   const handlePayment = async () => {
     if (!validateAddress()) return;
     
-    // Validate cart is not empty
-    if (items.length === 0) {
-      toast({
-        title: 'Cart is Empty',
-        description: 'Please add items to cart before checkout',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
     setIsProcessing(true);
     
     try {
-      // ✅ FIX: Convert cart items to backend format
-      const orderItems = items.map(item => ({
+      // Convert cart items to backend format
+      const orderItems: CreateOrderItem[] = items.map(item => ({
         productId: item.product.id,
         name: item.product.name,
         quantity: item.quantity,
@@ -115,15 +105,19 @@ const Checkout = () => {
         image: item.product.images?.[0] || '',
       }));
 
-      // ✅ FIX: Include items in order creation
+      console.log('📦 Creating order with items:', orderItems);
+      console.log('💳 Payment method:', paymentMethod);
+
+      // Create order with all required fields
       const order = await createOrder.mutateAsync({
         shippingAddress: address,
+        billingAddress: address,
         paymentMethod,
+        items: orderItems,
         notes: '',
-        items: orderItems, // ✅ Added items
       });
 
-      console.log('✅ Order created:', order); // ✅ ADDED: Debug log
+      console.log('✅ Order created:', order);
 
       if (paymentMethod === 'cod') {
         toast({
@@ -135,15 +129,20 @@ const Checkout = () => {
         return;
       }
 
-      // Step 3: Online payment (Razorpay)
+      // Online payment (Razorpay)
       const paymentResponse = await paymentService.createOrder(order._id);
 
       if (!paymentResponse.success || !paymentResponse.data) {
         throw new Error('Failed to create payment order');
       }
 
-      // paymentResponse.data is already RazorpayOrder (API unwraps nested data)
-      const razorpayOrder = paymentResponse.data;
+      const razorpayOrder = paymentResponse.data as {
+        orderId: string;
+        razorpayOrderId: string;
+        amount: number;
+        currency: string;
+        keyId: string;
+      };
 
       await paymentService.initiatePayment(
         razorpayOrder,
