@@ -15,6 +15,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
+import { getErrorMessage, getErrorTitle, logError } from '@/utils/errorHandler';
 
 const addressSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -116,34 +117,104 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      // ⭐ CRITICAL FIX: Convert cart items to backend format
-      // Use _id if available (from API), fallback to id for static products
-      const orderItems: CreateOrderItem[] = items.map(item => ({
-        productId: item.product._id || item.product.id, // ⭐ THIS IS THE KEY FIX
-        name: item.product.name,
-        quantity: item.quantity,
-        price: item.product.price,
-        weight: parseFloat(item.product.weight) || 0, // Parse weight string to number
-        image: item.product.images?.[0] || '',
-      }));
+      // ⭐ CRITICAL: Normalize payment method (extra safety)
+      const normalizedPaymentMethod = paymentMethod.toLowerCase().trim() as PaymentMethod;
+      
+      // ⭐ Validate payment method before sending
+      if (!['online', 'cod'].includes(normalizedPaymentMethod)) {
+        throw new Error('Invalid payment method selected. Please try again.');
+      }
 
-      console.log('📦 Creating order with items:', orderItems);
-      console.log('💳 Payment method:', paymentMethod);
-      console.log('📍 Shipping address:', address);
+      // ⭐ DEBUG: Log cart items BEFORE conversion
+      console.log('🛒 Cart Items (raw):', items);
+      
+      // ⭐ Convert cart items to backend format
+      const orderItems: CreateOrderItem[] = items.map(item => {
+        // Handle both frontend Product type and API ApiProduct type
+        const productId = item.product._id || item.product.id;
+        
+        // Handle price - could be number or object with sellingPrice
+        const price = typeof item.product.price === 'number' 
+          ? item.product.price 
+          : (item.product.price as any)?.sellingPrice || 0;
+        
+        // Handle images - could be string[] or object[]
+        const imageUrl = Array.isArray(item.product.images)
+          ? (typeof item.product.images[0] === 'string' 
+              ? item.product.images[0] 
+              : (item.product.images[0] as any)?.url || '')
+          : '';
+        
+        // Handle weight - could be string or number
+        const weight = typeof item.product.weight === 'string'
+          ? parseFloat(item.product.weight) || 0
+          : item.product.weight || 0;
+        
+        // Log each item conversion
+        console.log('📦 Converting item:', {
+          name: item.product.name,
+          productId,
+          price,
+          quantity: item.quantity,
+          weight,
+          imageUrl,
+        });
+        
+        return {
+          productId,
+          name: item.product.name,
+          quantity: item.quantity,
+          price,
+          weight,
+          image: imageUrl,
+        };
+      });
 
-      // ⭐ Create order with all required fields including items array
-      const order = await createOrder.mutateAsync({
+      // ⭐ DEBUG: Log converted items
+      console.log('📋 Order Items (converted):', JSON.stringify(orderItems, null, 2));
+      
+      // ⭐ VALIDATION: Check if all items have valid productId
+      const itemsWithoutId = orderItems.filter(item => !item.productId);
+      if (itemsWithoutId.length > 0) {
+        console.error('❌ Items without ID:', itemsWithoutId);
+        throw new Error('Some cart items are missing product IDs. Please refresh and try again.');
+      }
+      
+      // ⭐ VALIDATION: Check if all items have valid price
+      const itemsWithoutPrice = orderItems.filter(item => !item.price || item.price <= 0);
+      if (itemsWithoutPrice.length > 0) {
+        console.error('❌ Items without valid price:', itemsWithoutPrice);
+        throw new Error('Some cart items have invalid prices. Please refresh and try again.');
+      }
+
+      // ⭐ DEBUG: Log the exact payload being sent
+      const orderPayload = {
         shippingAddress: address,
         billingAddress: address,
-        paymentMethod,
-        items: orderItems, // ⭐ CRITICAL: Items are now included
+        paymentMethod: normalizedPaymentMethod,
+        items: orderItems,
         notes: '',
+      };
+      
+      console.log('🔍 Full Order Payload (stringified):', JSON.stringify(orderPayload, null, 2));
+      console.log('📊 Payload Summary:', {
+        paymentMethod: normalizedPaymentMethod,
+        paymentMethodType: typeof normalizedPaymentMethod,
+        isValid: ['online', 'cod'].includes(normalizedPaymentMethod),
+        itemsCount: orderItems.length,
+        itemsArray: Array.isArray(orderItems),
+        itemsIsEmpty: orderItems.length === 0,
+        firstItem: orderItems[0],
+        hasItems: !!orderPayload.items && orderPayload.items.length > 0,
       });
+
+      // ⭐ Create order with validated payload
+      const order = await createOrder.mutateAsync(orderPayload);
 
       console.log('✅ Order created successfully:', order);
 
       // COD flow
-      if (paymentMethod === 'cod') {
+      if (normalizedPaymentMethod === 'cod') {
         toast({
           title: 'Order Placed!',
           description: 'Your order has been placed successfully.',
@@ -199,25 +270,20 @@ const Checkout = () => {
           }
         },
         (error) => {
-          console.error('Payment error:', error);
+          logError(error, 'Payment');
           toast({
-            title: 'Payment Failed',
-            description:
-              error instanceof Error
-                ? error.message
-                : 'Payment was cancelled or failed.',
+            title: getErrorTitle(error),
+            description: getErrorMessage(error),
             variant: 'destructive',
           });
         }
       );
     } catch (error) {
-      console.error('❌ Order creation failed:', error);
+      logError(error, 'Order Creation');
+      
       toast({
-        title: 'Order Failed',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Could not place order. Please try again.',
+        title: getErrorTitle(error),
+        description: getErrorMessage(error),
         variant: 'destructive',
       });
     } finally {
@@ -225,53 +291,60 @@ const Checkout = () => {
     }
   };
 
+  // Redirect if cart is empty
   if (items.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <>
         <Navbar />
-        <main className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="text-center">
-            <h1 className="text-2xl font-serif mb-4">Your cart is empty</h1>
-            <Button variant="luxury" asChild>
-              <Link to="/collections">Shop Now</Link>
-            </Button>
+        <main className="min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <h1 className="text-2xl font-serif">Your cart is empty</h1>
+            <Link to="/collections">
+              <Button variant="luxury">Browse Collections</Button>
+            </Link>
           </div>
         </main>
         <Footer />
-      </div>
+      </>
     );
   }
 
   return (
     <>
       <Helmet>
-        <title>Checkout — Laxmi Silver</title>
+        <title>Checkout - Lakshmi Silver</title>
       </Helmet>
 
-      <div className="min-h-screen flex flex-col overflow-x-hidden">
+      <div className="flex flex-col min-h-screen">
         <Navbar />
 
-        <main className="flex-1 py-6 sm:py-8 md:py-12">
+        <main className="flex-1 py-12">
           <div className="container mx-auto px-4">
-            {/* Steps */}
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <div className={`flex items-center gap-2 ${step === 'address' ? 'text-primary' : 'text-muted-foreground'}`}>
-                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'address' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>1</span>
-                <span className="hidden sm:inline">Address</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <div className={`flex items-center gap-2 ${step === 'payment' ? 'text-primary' : 'text-muted-foreground'}`}>
-                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'payment' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>2</span>
-                <span className="hidden sm:inline">Payment</span>
+            {/* Progress Indicator */}
+            <div className="max-w-3xl mx-auto mb-8">
+              <div className="flex items-center justify-center gap-4">
+                <div className={`flex items-center gap-2 ${step === 'address' ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'address' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                    1
+                  </div>
+                  <span className="text-sm font-medium">Address</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <div className={`flex items-center gap-2 ${step === 'payment' ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'payment' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                    2
+                  </div>
+                  <span className="text-sm font-medium">Payment</span>
+                </div>
               </div>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Address Form */}
+            <div className="grid lg:grid-cols-[1fr_400px] gap-8 max-w-6xl mx-auto">
+              {/* Address Section */}
               {step === 'address' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-serif">Shipping Address</h2>
-                  
+                  <h2 className="text-xl font-serif mb-4">Shipping Address</h2>
+
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="name">Full Name</Label>
@@ -409,6 +482,13 @@ const Checkout = () => {
                       </div>
                     </label>
                   </RadioGroup>
+
+                  {/* ⭐ DEBUG INFO (remove in production) */}
+                  {import.meta.env.DEV && (
+                    <div className="bg-muted p-3 rounded text-xs">
+                      <strong>Debug:</strong> Payment Method = "{paymentMethod}"
+                    </div>
+                  )}
 
                   <Button
                     variant="luxury"
