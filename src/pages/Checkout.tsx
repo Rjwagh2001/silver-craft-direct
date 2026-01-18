@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, CreditCard, MessageCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, CreditCard, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateOrder } from '@/hooks/use-orders';
 import { paymentService } from '@/services/payment.service';
+import { cartService } from '@/services/cart.service';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Helmet } from 'react-helmet-async';
@@ -94,22 +95,23 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      // ✅ FIX: Convert cart items to backend format
-      const orderItems = items.map(item => ({
+      // Step 1: Sync local cart items to backend cart
+      // Backend creates orders from its own cart collection, not request body
+      const cartItems = items.map(item => ({
         productId: item.product.id,
-        name: item.product.name,
         quantity: item.quantity,
-        price: item.product.price,
-        weight: item.product.weight || 0,
-        image: item.product.images?.[0] || '',
       }));
 
-      // ✅ FIX: Include items in order creation
+      const syncResult = await cartService.syncCart(cartItems);
+      if (!syncResult.success) {
+        throw new Error('Failed to sync cart with server');
+      }
+
+      // Step 2: Create order (backend reads from its cart)
       const order = await createOrder.mutateAsync({
         shippingAddress: address,
         paymentMethod,
         notes: '',
-        items: orderItems, // ✅ Added items
       });
 
       if (paymentMethod === 'cod') {
@@ -122,20 +124,15 @@ const Checkout = () => {
         return;
       }
 
-      // Online payment (Razorpay)
+      // Step 3: Online payment (Razorpay)
       const paymentResponse = await paymentService.createOrder(order._id);
 
       if (!paymentResponse.success || !paymentResponse.data) {
         throw new Error('Failed to create payment order');
       }
 
-      const razorpayOrder = paymentResponse.data as {
-        orderId: string;
-        razorpayOrderId: string;
-        amount: number;
-        currency: string;
-        keyId: string;
-      };
+      // paymentResponse.data is already RazorpayOrder (API unwraps nested data)
+      const razorpayOrder = paymentResponse.data;
 
       await paymentService.initiatePayment(
         razorpayOrder,
