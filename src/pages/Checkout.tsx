@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, CreditCard, MessageCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, CreditCard, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,11 +92,21 @@ const Checkout = () => {
   const handlePayment = async () => {
     if (!validateAddress()) return;
     
+    // Validate cart is not empty
+    if (items.length === 0) {
+      toast({
+        title: 'Cart is Empty',
+        description: 'Please add items to cart before checkout',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setIsProcessing(true);
     
     try {
-      // ✅ FIXED: Convert cart items to backend format with proper typing
-      const orderItems: CreateOrderItem[] = items.map(item => ({
+      // ✅ FIX: Convert cart items to backend format
+      const orderItems = items.map(item => ({
         productId: item.product.id,
         name: item.product.name,
         quantity: item.quantity,
@@ -105,16 +115,12 @@ const Checkout = () => {
         image: item.product.images?.[0] || '',
       }));
 
-      console.log('📦 Creating order with items:', orderItems); // ✅ ADDED: Debug log
-      console.log('💳 Payment method:', paymentMethod); // ✅ ADDED: Debug log
-
-      // ✅ FIXED: Include items and billingAddress in order creation
+      // ✅ FIX: Include items in order creation
       const order = await createOrder.mutateAsync({
         shippingAddress: address,
-        billingAddress: address, // ✅ ADDED: Billing address
         paymentMethod,
-        items: orderItems, // ✅ FIXED: Items with proper type
         notes: '',
+        items: orderItems, // ✅ Added items
       });
 
       console.log('✅ Order created:', order); // ✅ ADDED: Debug log
@@ -129,20 +135,15 @@ const Checkout = () => {
         return;
       }
 
-      // Online payment (Razorpay)
+      // Step 3: Online payment (Razorpay)
       const paymentResponse = await paymentService.createOrder(order._id);
 
       if (!paymentResponse.success || !paymentResponse.data) {
         throw new Error('Failed to create payment order');
       }
 
-      const razorpayOrder = paymentResponse.data as {
-        orderId: string;
-        razorpayOrderId: string;
-        amount: number;
-        currency: string;
-        keyId: string;
-      };
+      // paymentResponse.data is already RazorpayOrder (API unwraps nested data)
+      const razorpayOrder = paymentResponse.data;
 
       await paymentService.initiatePayment(
         razorpayOrder,

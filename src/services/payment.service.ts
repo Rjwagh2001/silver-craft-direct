@@ -17,17 +17,12 @@ export interface PaymentVerification {
 
 export const paymentService = {
   async createOrder(orderId: string) {
-    return api.post<{
-      success: boolean;
-      data: RazorpayOrder;
-    }>('/payments/create-order', { orderId });
+    // API already unwraps nested data, so we get RazorpayOrder directly
+    return api.post<RazorpayOrder>('/payments/create-order', { orderId });
   },
 
   async verifyPayment(data: PaymentVerification) {
-    return api.post<{
-      success: boolean;
-      data: { order: unknown };
-    }>('/payments/verify', data);
+    return api.post<{ order: unknown }>('/payments/verify', data);
   },
 
   async getStatus(orderId: string) {

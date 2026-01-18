@@ -36,4 +36,22 @@ export const cartService = {
   async clear() {
     return api.delete<{ message: string }>('/cart/clear');
   },
+
+  // Sync local cart items to backend cart
+  // This clears the backend cart and adds all local items
+  async syncCart(items: Array<{ productId: string; quantity: number }>) {
+    // First clear the existing backend cart
+    await api.delete<{ message: string }>('/cart/clear');
+    
+    // Then add each item from local cart
+    for (const item of items) {
+      await api.post<{ cart: Cart }>('/cart/add', { 
+        productId: item.productId, 
+        quantity: item.quantity 
+      });
+    }
+    
+    // Return the updated cart
+    return api.get<{ cart: Cart }>('/cart');
+  },
 };
