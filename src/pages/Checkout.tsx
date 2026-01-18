@@ -91,6 +91,7 @@ const Checkout = () => {
   };
 
   const handleContinueToPayment = () => {
+    
     if (validateAddress()) {
       setStep('payment');
     }
@@ -213,6 +214,25 @@ const Checkout = () => {
         firstItem: orderItems[0],
         hasItems: !!orderPayload.items && orderPayload.items.length > 0,
       });
+
+
+ // ===============================
+// 🔴 HARD DEBUG ALERT (TEMPORARY)
+// ===============================
+      alert(
+        `CHECKOUT DEBUG\n\n` +
+        `paymentMethod (state): ${paymentMethod}\n` +
+        `paymentMethod (normalized): ${normalizedPaymentMethod}\n\n` +
+        `Items count: ${orderItems.length}\n` +
+        `First productId: ${orderItems[0]?.productId ?? 'MISSING'}\n\n` +
+        `FULL PAYLOAD:\n` +
+        JSON.stringify(orderPayload, null, 2)
+      );
+
+      // Stop execution so backend is NOT called (for debugging)
+      setIsProcessing(false);
+      return;
+
       
       // ⭐ CRITICAL: Double-check payment method hasn't been corrupted
       if (orderPayload.paymentMethod !== 'online' && orderPayload.paymentMethod !== 'cod') {
