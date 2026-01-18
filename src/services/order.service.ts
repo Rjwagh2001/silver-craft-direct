@@ -40,16 +40,21 @@ export interface Order {
   updatedAt: string;
 }
 
+export interface OrderItemData {
+  productId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  weight: number;
+  image: string;
+}
+
 export interface CreateOrderData {
   shippingAddress: Address;
   paymentMethod: 'online' | 'cod';
+  items: OrderItemData[];
   notes?: string;
-}
-
-// Sync local cart to backend before checkout
-export interface SyncCartItem {
-  productId: string;
-  quantity: number;
+  couponCode?: string;
 }
 
 export const orderService = {
