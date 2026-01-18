@@ -34,6 +34,13 @@ const Checkout = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const createOrder = useCreateOrder();
+
+
+    // 🔥 DEBUG: Confirm correct Checkout.tsx is loaded
+  if (import.meta.env.PROD) {
+    alert('✅ NEW Checkout.tsx loaded (paymentMethod = online/cod)');
+  }
+
   
   const [step, setStep] = useState<'address' | 'payment'>('address');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('online');
