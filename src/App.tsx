@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useCartSync } from "@/hooks/use-cart-sync";
 
 import CartDrawer from "@/components/cart/CartDrawer";
 
@@ -38,6 +39,55 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Component that uses the cart sync hook
+const AppContent = () => {
+  useCartSync(); // Auto-sync cart on login
+
+  return (
+    <>
+      <CartDrawer />
+      <Routes>
+        <Route path="/" element={<Index />} />
+
+        <Route path="/collections" element={<CategoryPage />} />
+        <Route path="/collections/:category" element={<CategoryPage />} />
+
+        <Route path="/product/:slug" element={<ProductDetail />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
+
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/faq" element={<FAQ />} />
+        <Route path="/reviews" element={<Reviews />} />
+        <Route path="/videos" element={<VideoFeed />} />
+
+        <Route path="/account" element={<Account />} />
+        <Route path="/account/profile" element={<ProfilePage />} />
+        <Route path="/account/orders" element={<OrdersPage />} />
+        <Route path="/account/addresses" element={<AddressesPage />} />
+        <Route path="/account/wishlist" element={<WishlistPage />} />
+        <Route path="/account/settings" element={<SettingsPage />} />
+        <Route path="/auth" element={<Auth />} />
+
+        {/* Password Flow Routes */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/resend-verification" element={<ResendVerification />} />
+
+        {/* Hidden admin route - not in navigation */}
+        <Route path="/internal-upload" element={<InternalUpload />} />
+
+        {/* MUST BE LAST */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+};
+
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
@@ -47,46 +97,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <CartDrawer />
-
-              <Routes>
-                <Route path="/" element={<Index />} />
-
-                <Route path="/collections" element={<CategoryPage />} />
-                <Route path="/collections/:category" element={<CategoryPage />} />
-
-                <Route path="/product/:slug" element={<ProductDetail />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/order-success" element={<OrderSuccess />} />
-
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/reviews" element={<Reviews />} />
-                <Route path="/videos" element={<VideoFeed />} />
-
-                <Route path="/account" element={<Account />} />
-                <Route path="/account/profile" element={<ProfilePage />} />
-                <Route path="/account/orders" element={<OrdersPage />} />
-                <Route path="/account/addresses" element={<AddressesPage />} />
-                <Route path="/account/wishlist" element={<WishlistPage />} />
-                <Route path="/account/settings" element={<SettingsPage />} />
-                <Route path="/auth" element={<Auth />} />
-
-                {/* ✅ PASSWORD FLOW ROUTES */}
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route path="/resend-verification" element={<ResendVerification />} />
-
-                {/* Hidden admin route - not in navigation */}
-                <Route path="/internal-upload" element={<InternalUpload />} />
-
-                {/* MUST BE LAST */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <AppContent />
             </BrowserRouter>
           </TooltipProvider>
         </CartProvider>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Heart, Eye } from 'lucide-react';
+import { ShoppingBag, Heart, Eye, Loader2 } from 'lucide-react';
 import { Product } from '@/types/product';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
@@ -13,6 +13,7 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
+  const [isAdding, setIsAdding] = useState(false);
   const { addItem } = useCart();
   const { toast } = useToast();
 
@@ -24,14 +25,27 @@ const ProductCard = ({ product }: ProductCardProps) => {
     }).format(price);
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem(product);
-    toast({
-      title: "Added to bag",
-      description: `${product.name} has been added to your shopping bag.`,
-    });
+    
+    setIsAdding(true);
+    
+    try {
+      await addItem(product);
+      toast({
+        title: "Added to bag",
+        description: `${product.name} has been added to your shopping bag.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to add item to cart",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const discount = product.originalPrice 
@@ -50,7 +64,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         setImageIndex(0);
       }}
     >
-      {/* Badges - Simplified */}
+      {/* Badges */}
       <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-10 flex flex-col gap-1 sm:gap-2">
         {product.isNew && (
           <span className="bg-primary text-primary-foreground text-[10px] sm:text-xs font-medium px-2 py-0.5 sm:py-1 rounded">
@@ -95,7 +109,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         />
       </Link>
 
-      {/* Content - Simplified (removed 925 Silver & Weight) */}
+      {/* Content */}
       <div className="p-3 sm:p-4">
         <Link to={`/product/${product.slug}`}>
           <h3 className="font-medium text-sm sm:text-base line-clamp-1 hover:text-primary transition-colors">
@@ -120,16 +134,26 @@ const ProductCard = ({ product }: ProductCardProps) => {
           )}
         </div>
 
-        {/* Add to Cart Button - Improved spacing */}
+        {/* Add to Cart Button */}
         <div className="mt-4 pt-3 border-t border-border/50">
           <Button
             variant="luxury-outline"
             size="sm"
             className="w-full text-xs sm:text-sm h-10"
             onClick={handleAddToCart}
+            disabled={isAdding || !product.inStock}
           >
-            <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-            Add to Cart
+            {isAdding ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+              </>
+            )}
           </Button>
         </div>
       </div>
