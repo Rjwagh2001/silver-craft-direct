@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, CreditCard, MessageCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, CreditCard, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,13 +34,6 @@ const Checkout = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const createOrder = useCreateOrder();
-
-
-    // 🔥 DEBUG: Confirm correct Checkout.tsx is loaded
-  if (import.meta.env.PROD) {
-    alert('✅ NEW Checkout.tsx loaded (paymentMethod = online/cod)');
-  }
-
   
   const [step, setStep] = useState<'address' | 'payment'>('address');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('online');
@@ -91,7 +84,6 @@ const Checkout = () => {
   };
 
   const handleContinueToPayment = () => {
-    
     if (validateAddress()) {
       setStep('payment');
     }
@@ -100,7 +92,7 @@ const Checkout = () => {
   const handlePayment = async () => {
     if (!validateAddress()) return;
     
-    // ⭐ VALIDATION: Check if cart is empty
+    // Validation: Check if cart is empty
     if (items.length === 0) {
       toast({
         title: 'Cart is Empty',
@@ -110,7 +102,7 @@ const Checkout = () => {
       return;
     }
 
-    // ⭐ VALIDATION: Check if all items have valid product IDs .test
+    // Validation: Check if all items have valid product IDs
     const invalidItems = items.filter(item => !item.product._id && !item.product.id);
     if (invalidItems.length > 0) {
       toast({
@@ -124,48 +116,23 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      // ⭐ CRITICAL: Normalize payment method (extra safety)
-      const normalizedPaymentMethod = paymentMethod.toLowerCase().trim() as PaymentMethod;
-      
-      // ⭐ Validate payment method before sending
-      if (!['online', 'cod'].includes(normalizedPaymentMethod)) {
-        throw new Error('Invalid payment method selected. Please try again.');
-      }
-
-      // ⭐ DEBUG: Log cart items BEFORE conversion
-      console.log('🛒 Cart Items (raw):', items);
-      
-      // ⭐ Convert cart items to backend format
+      // ✅ Convert cart items to backend format
       const orderItems: CreateOrderItem[] = items.map(item => {
-        // Handle both frontend Product type and API ApiProduct type
         const productId = item.product._id || item.product.id;
         
-        // Handle price - could be number or object with sellingPrice
         const price = typeof item.product.price === 'number' 
           ? item.product.price 
           : (item.product.price as any)?.sellingPrice || 0;
         
-        // Handle images - could be string[] or object[]
         const imageUrl = Array.isArray(item.product.images)
           ? (typeof item.product.images[0] === 'string' 
               ? item.product.images[0] 
               : (item.product.images[0] as any)?.url || '')
           : '';
         
-        // Handle weight - could be string or number
         const weight = typeof item.product.weight === 'string'
           ? parseFloat(item.product.weight) || 0
           : item.product.weight || 0;
-        
-        // Log each item conversion
-        console.log('📦 Converting item:', {
-          name: item.product.name,
-          productId,
-          price,
-          quantity: item.quantity,
-          weight,
-          imageUrl,
-        });
         
         return {
           productId,
@@ -177,78 +144,25 @@ const Checkout = () => {
         };
       });
 
-      // ⭐ DEBUG: Log converted items
-      console.log('📋 Order Items (converted):', JSON.stringify(orderItems, null, 2));
-      
-      // ⭐ VALIDATION: Check if all items have valid productId
-      const itemsWithoutId = orderItems.filter(item => !item.productId);
-      if (itemsWithoutId.length > 0) {
-        console.error('❌ Items without ID:', itemsWithoutId);
-        throw new Error('Some cart items are missing product IDs. Please refresh and try again.');
-      }
-      
-      // ⭐ VALIDATION: Check if all items have valid price
-      const itemsWithoutPrice = orderItems.filter(item => !item.price || item.price <= 0);
-      if (itemsWithoutPrice.length > 0) {
-        console.error('❌ Items without valid price:', itemsWithoutPrice);
-        throw new Error('Some cart items have invalid prices. Please refresh and try again.');
-      }
-
-      // ⭐ DEBUG: Log the exact payload being sent
+      // ✅ CRITICAL: Ensure paymentMethod is exactly 'online' or 'cod'
       const orderPayload = {
         shippingAddress: address,
         billingAddress: address,
-        paymentMethod: normalizedPaymentMethod,
+        paymentMethod: paymentMethod, // ✅ This should be 'online' or 'cod'
         items: orderItems,
         notes: '',
       };
       
-      console.log('🔍 Full Order Payload (stringified):', JSON.stringify(orderPayload, null, 2));
-      console.log('📊 Payload Summary:', {
-        paymentMethod: normalizedPaymentMethod,
-        paymentMethodType: typeof normalizedPaymentMethod,
-        isValid: ['online', 'cod'].includes(normalizedPaymentMethod),
-        itemsCount: orderItems.length,
-        itemsArray: Array.isArray(orderItems),
-        itemsIsEmpty: orderItems.length === 0,
-        firstItem: orderItems[0],
-        hasItems: !!orderPayload.items && orderPayload.items.length > 0,
-      });
+      console.log('📦 Order Payload:', JSON.stringify(orderPayload, null, 2));
+      console.log('💳 Payment Method:', paymentMethod, '(type:', typeof paymentMethod, ')');
 
-
- // ===============================
-// 🔴 HARD DEBUG ALERT (TEMPORARY)
-// ===============================
-      alert(
-        `CHECKOUT DEBUG\n\n` +
-        `paymentMethod (state): ${paymentMethod}\n` +
-        `paymentMethod (normalized): ${normalizedPaymentMethod}\n\n` +
-        `Items count: ${orderItems.length}\n` +
-        `First productId: ${orderItems[0]?.productId ?? 'MISSING'}\n\n` +
-        `FULL PAYLOAD:\n` +
-        JSON.stringify(orderPayload, null, 2)
-      );
-
-      // Stop execution so backend is NOT called (for debugging)
-      setIsProcessing(false);
-      return;
-
-      
-      // ⭐ CRITICAL: Double-check payment method hasn't been corrupted
-      if (orderPayload.paymentMethod !== 'online' && orderPayload.paymentMethod !== 'cod') {
-        console.error('❌ Payment method corrupted!', orderPayload.paymentMethod);
-        throw new Error(`Invalid payment method: ${orderPayload.paymentMethod}. Expected 'online' or 'cod'.`);
-      }
-
-      // ⭐ Create order with validated payload
+      // ✅ Create order with validated payload
       const order = await createOrder.mutateAsync(orderPayload);
       
-      console.log('✅ Order API returned:', order);
-
       console.log('✅ Order created successfully:', order);
 
       // COD flow
-      if (normalizedPaymentMethod === 'cod') {
+      if (paymentMethod === 'cod') {
         toast({
           title: 'Order Placed!',
           description: 'Your order has been placed successfully.',
@@ -495,9 +409,10 @@ const Checkout = () => {
 
                   <RadioGroup
                     value={paymentMethod}
-                    onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
+                    onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
                     className="space-y-3"
                   >
+                    {/* ✅ CRITICAL: value must be exactly 'online' */}
                     <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer ${paymentMethod === 'online' ? 'border-primary bg-primary/5' : 'border-border'}`}>
                       <RadioGroupItem value="online" id="online" />
                       <div className="flex-1">
@@ -509,6 +424,7 @@ const Checkout = () => {
                       <CreditCard className="h-5 w-5" />
                     </label>
 
+                    {/* ✅ CRITICAL: value must be exactly 'cod' */}
                     <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer ${paymentMethod === 'cod' ? 'border-primary bg-primary/5' : 'border-border'}`}>
                       <RadioGroupItem value="cod" id="cod" />
                       <div className="flex-1">
@@ -520,7 +436,7 @@ const Checkout = () => {
                     </label>
                   </RadioGroup>
 
-                  {/* ⭐ DEBUG INFO (remove in production) */}
+                  {/* Debug Info (remove in production) */}
                   {import.meta.env.DEV && (
                     <div className="bg-muted p-3 rounded text-xs">
                       <strong>Debug:</strong> Payment Method = "{paymentMethod}"
