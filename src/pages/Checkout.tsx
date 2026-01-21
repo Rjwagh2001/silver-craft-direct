@@ -26,8 +26,6 @@ const addressSchema = z.object({
   pincode: z.string().regex(/^\d{6}$/, 'Enter valid 6-digit pincode'),
 });
 
-type PaymentMethod = 'online' | 'cod';
-
 const Checkout = () => {
   const { items, subtotal, shipping, total, clearCart } = useCart();
   const { user } = useAuth();
@@ -36,7 +34,8 @@ const Checkout = () => {
   const createOrder = useCreateOrder();
   
   const [step, setStep] = useState<'address' | 'payment'>('address');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('online');
+  // ✅ CRITICAL: Default to 'online', NOT 'razorpay'
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -89,10 +88,24 @@ const Checkout = () => {
     }
   };
 
+  // ✅ EXPLICIT HANDLER for payment method change
+  const handlePaymentMethodChange = (value: string) => {
+    console.log('🔄 Payment method changing to:', value);
+    
+    // ✅ STRICT TYPE CHECKING
+    if (value === 'online' || value === 'cod') {
+      setPaymentMethod(value);
+      console.log('✅ Payment method set to:', value);
+    } else {
+      console.error('❌ INVALID payment method:', value);
+      // Fallback to online
+      setPaymentMethod('online');
+    }
+  };
+
   const handlePayment = async () => {
     if (!validateAddress()) return;
     
-    // Validation: Check if cart is empty
     if (items.length === 0) {
       toast({
         title: 'Cart is Empty',
@@ -102,7 +115,6 @@ const Checkout = () => {
       return;
     }
 
-    // Validation: Check if all items have valid product IDs
     const invalidItems = items.filter(item => !item.product._id && !item.product.id);
     if (invalidItems.length > 0) {
       toast({
@@ -116,7 +128,6 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      // ✅ Convert cart items to backend format
       const orderItems: CreateOrderItem[] = items.map(item => {
         const productId = item.product._id || item.product.id;
         
@@ -144,25 +155,29 @@ const Checkout = () => {
         };
       });
 
-      // ✅ CRITICAL: Ensure paymentMethod is exactly 'online' or 'cod'
+      // ✅ FINAL VALIDATION: Ensure paymentMethod is exactly 'online' or 'cod'
+      const validatedPaymentMethod = paymentMethod === 'cod' ? 'cod' : 'online';
+      
+      console.log('📦 FINAL CHECK - Payment Method:', validatedPaymentMethod);
+      console.log('📦 State value:', paymentMethod);
+      console.log('📦 Type check:', typeof validatedPaymentMethod);
+
       const orderPayload = {
         shippingAddress: address,
         billingAddress: address,
-        paymentMethod: paymentMethod, // ✅ This should be 'online' or 'cod'
+        paymentMethod: validatedPaymentMethod, // ✅ GUARANTEED to be 'online' or 'cod'
         items: orderItems,
         notes: '',
       };
       
-      console.log('📦 Order Payload:', JSON.stringify(orderPayload, null, 2));
-      console.log('💳 Payment Method:', paymentMethod, '(type:', typeof paymentMethod, ')');
+      console.log('📦 Final Order Payload:', JSON.stringify(orderPayload, null, 2));
 
-      // ✅ Create order with validated payload
       const order = await createOrder.mutateAsync(orderPayload);
       
-      console.log('✅ Order created successfully:', order);
+      console.log('✅ Order created:', order);
 
       // COD flow
-      if (paymentMethod === 'cod') {
+      if (validatedPaymentMethod === 'cod') {
         toast({
           title: 'Order Placed!',
           description: 'Your order has been placed successfully.',
@@ -242,7 +257,6 @@ const Checkout = () => {
     }
   };
 
-  // Redirect if cart is empty
   if (items.length === 0) {
     return (
       <>
@@ -407,26 +421,41 @@ const Checkout = () => {
                     </Button>
                   </div>
 
+                  {/* ✅ EXPLICIT onValueChange handler */}
                   <RadioGroup
                     value={paymentMethod}
-                    onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+                    onValueChange={handlePaymentMethodChange}
                     className="space-y-3"
                   >
-                    {/* ✅ CRITICAL: value must be exactly 'online' */}
-                    <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer ${paymentMethod === 'online' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                      <RadioGroupItem value="online" id="online" />
+                    {/* ✅ Pay Online - value MUST be "online" */}
+                    <label 
+                      htmlFor="payment-online"
+                      className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                        paymentMethod === 'online' 
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <RadioGroupItem value="online" id="payment-online" />
                       <div className="flex-1">
                         <p className="font-medium">Pay Online</p>
                         <p className="text-sm text-muted-foreground">
                           UPI, Cards, Netbanking via Razorpay
                         </p>
                       </div>
-                      <CreditCard className="h-5 w-5" />
+                      <CreditCard className="h-5 w-5 text-primary" />
                     </label>
 
-                    {/* ✅ CRITICAL: value must be exactly 'cod' */}
-                    <label className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer ${paymentMethod === 'cod' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                      <RadioGroupItem value="cod" id="cod" />
+                    {/* ✅ Cash on Delivery - value MUST be "cod" */}
+                    <label 
+                      htmlFor="payment-cod"
+                      className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                        paymentMethod === 'cod' 
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <RadioGroupItem value="cod" id="payment-cod" />
                       <div className="flex-1">
                         <p className="font-medium">Cash on Delivery</p>
                         <p className="text-sm text-muted-foreground">
@@ -436,12 +465,15 @@ const Checkout = () => {
                     </label>
                   </RadioGroup>
 
-                  {/* Debug Info (remove in production) */}
-                  {import.meta.env.DEV && (
-                    <div className="bg-muted p-3 rounded text-xs">
-                      <strong>Debug:</strong> Payment Method = "{paymentMethod}"
-                    </div>
-                  )}
+                  {/* Debug Info */}
+                  <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded text-xs border border-blue-200 dark:border-blue-800">
+                    <strong className="text-blue-900 dark:text-blue-100">Current Payment Method:</strong>{' '}
+                    <code className="bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded">"{paymentMethod}"</code>
+                    <br />
+                    <span className="text-blue-700 dark:text-blue-300">
+                      ✅ This will be sent to backend
+                    </span>
+                  </div>
 
                   <Button
                     variant="luxury"
