@@ -11,16 +11,18 @@ import ReviewsSection from "@/components/home/ReviewsSection";
 import InstagramFeed from "@/components/home/InstagramFeed";
 import SectionDivider from "@/components/ui/SectionDivider";
 import { useFeaturedProducts, useProducts } from "@/hooks/use-products";
-import { getFeaturedProducts, getNewArrivals } from "@/data/products";
 
 const Index = () => {
-  // Fetch from API with fallback to static data
-  const { data: apiFeaturedProducts } = useFeaturedProducts();
-  const { data: apiNewArrivals } = useProducts({ sort: '-createdAt', limit: 12 });
+  // Fetch from API
+  const { data: apiFeaturedProducts, isLoading: featuredLoading } = useFeaturedProducts();
+  const { data: apiNewArrivals, isLoading: arrivalsLoading } = useProducts({ 
+    sort: '-createdAt', 
+    limit: 12 
+  });
 
-  // Use API data or fall back to static
-  const trendingProducts = apiFeaturedProducts?.length ? apiFeaturedProducts : getFeaturedProducts();
-  const newArrivals = apiNewArrivals?.products?.length ? apiNewArrivals.products : getNewArrivals();
+  // Use API data with fallback to empty array while loading
+  const trendingProducts = apiFeaturedProducts || [];
+  const newArrivals = apiNewArrivals?.products || [];
 
   return (
     <>
@@ -57,6 +59,7 @@ const Index = () => {
             title="Most Trending" 
             subtitle="Loved by Our Silver Family"
             products={trendingProducts}
+            isLoading={featuredLoading}
           />
           
           {/* Section Divider */}
@@ -68,6 +71,7 @@ const Index = () => {
             subtitle="Fresh Designs, Just Arrived"
             products={newArrivals}
             showNewBadge
+            isLoading={arrivalsLoading}
           />
           
           {/* Trust Section */}
